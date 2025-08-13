@@ -1,0 +1,95 @@
+{
+  "validation_timestamp": "2025-08-11T16:26:09.945182",
+  "validation_results": {
+    "web_interface": "OPERATIONAL",
+    "health_check": "HEALTHY",
+    "process_status": "RUNNING",
+    "workflows": "VALID"
+  },
+  "detailed_evidence": {
+    "web_interface": {
+      "status_code": 200,
+      "response_size": 1868,
+      "response_time_seconds": 0.008745,
+      "contains_n8n_content": true,
+      "status": "OPERATIONAL"
+    },
+    "health_check": {
+      "status_code": 200,
+      "status": "HEALTHY"
+    },
+    "process_status": {
+      "processes_found": 2,
+      "main_process_found": true,
+      "port_status": "LISTENING",
+      "status": "RUNNING"
+    },
+    "workflow_analysis": {
+      "01-content-generation-pipeline.json": {
+        "name": "Content Generation Pipeline",
+        "nodes": 11,
+        "connections": 9,
+        "node_types": {
+          "rssFeedRead": 1,
+          "httpRequest": 5,
+          "if": 4,
+          "executeWorkflow": 1
+        },
+        "features": {
+          "webhooks": false,
+          "http_requests": true,
+          "conditionals": true
+        },
+        "valid": true
+      },
+      "02-adversarial-optimization.json": {
+        "name": "Adversarial Optimization Loop",
+        "nodes": 12,
+        "connections": 10,
+        "node_types": {
+          "webhook": 1,
+          "httpRequest": 6,
+          "if": 1,
+          "itemLists": 1,
+          "function": 1
+        },
+        "features": {
+          "webhooks": true,
+          "http_requests": true,
+          "conditionals": true
+        },
+        "valid": true
+      },
+      "03-error-handler-workflow.json": {
+        "name": "Global Error Handler",
+        "nodes": 15,
+        "connections": 13,
+        "node_types": {
+          "webhook": 1,
+          "function": 2,
+          "if": 4,
+          "httpRequest": 5,
+          "wait": 1
+        },
+        "features": {
+          "webhooks": true,
+          "http_requests": true,
+          "conditionals": true
+        },
+        "valid": true
+      }
+    }
+  },
+  "final_assessment": {
+    "status": "OPERATIONAL",
+    "score": "4/4",
+    "percentage": 100.0,
+    "operational_components": [
+      "web_interface",
+      "health_check",
+      "process_status",
+      "workflows"
+    ],
+    "failed_components": []
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "name": "Main Content Generation Pipeline - TESTING",
+  "nodes": [
+    {
+      "parameters": {
+        "feedUrl": "https://feeds.bloomberg.com/markets/news.rss",
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute",
+              "minute": 15
+            }
+          ]
+        },
+        "options": {
+          "includeMarkdownInJson": false
+        }
+      },
+      "id": "rss-monitor",
+      "name": "RSS Monitor - Bloomberg Finance",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Domain Classification Logic\nconst domainMappings = {\n  'finance': ['bloomberg', 'reuters', 'wsj', 'marketwatch', 'cnbc', 'yahoo.com/finance'],\n  'sports': ['espn', 'bleacher', 'athletic', 'si.com', 'cbssports', 'yahoo.com/sports'],\n  'technology': ['techcrunch', 'ars-technica', 'wired', 'theverge', 'engadget', 'yahoo.com/tech']\n};\n\nconst items = $input.all();\nconst processedItems = [];\n\nconsole.log(`Processing ${items.length} RSS items`);\n\nfor (let item of items) {\n  const feedUrl = item.json.meta?.link || item.json.link || '';\n  const title = item.json.title || '';\n  const description = item.json.contentSnippet || item.json.description || item.json.summary || '';\n  \n  console.log(`Processing item: ${title}`);\n  \n  // Determine domain based on feed URL and content\n  let detectedDomain = 'general';\n  for (const [domain, keywords] of Object.entries(domainMappings)) {\n    if (keywords.some(keyword => \n      feedUrl.toLowerCase().includes(keyword) || \n      title.toLowerCase().includes(keyword) ||\n      description.toLowerCase().includes(keyword)\n    )) {\n      detectedDomain = domain;\n      break;\n    }\n  }\n  \n  // Content analysis for better classification\n  const financeKeywords = ['stock', 'market', 'trading', 'economy', 'financial', 'investment', 'crypto', 'currency', 'fund', 'bond', 'earnings'];\n  const sportsKeywords = ['game', 'match', 'player', 'team', 'score', 'season', 'championship', 'tournament', 'league', 'coach'];\n  const techKeywords = ['technology', 'software', 'ai', 'startup', 'app', 'digital', 'innovation', 'coding', 'tech', 'data'];\n  \n  const contentLower = (title + ' ' + description).toLowerCase();\n  \n  if (detectedDomain === 'general') {\n    if (financeKeywords.some(keyword => contentLower.includes(keyword))) {\n      detectedDomain = 'finance';\n    } else if (sportsKeywords.some(keyword => contentLower.includes(keyword))) {\n      detectedDomain = 'sports';\n    } else if (techKeywords.some(keyword => contentLower.includes(keyword))) {\n      detectedDomain = 'technology';\n    }\n  }\n  \n  // Generate unique content ID\n  const contentId = `content_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n  \n  console.log(`Classified as: ${detectedDomain}`);\n  \n  processedItems.push({\n    json: {\n      content_id: contentId,\n      domain: detectedDomain,\n      source_title: title,\n      source_description: description,\n      source_url: item.json.link,\n      feed_url: feedUrl,\n      pub_date: item.json.pubDate || item.json.isoDate,\n      priority: detectedDomain !== 'general' ? 'high' : 'medium',\n      processing_timestamp: new Date().toISOString(),\n      // Debug info\n      original_item_keys: Object.keys(item.json)\n    }\n  });\n}\n\nconsole.log(`Processed ${processedItems.length} items`);\nreturn processedItems;"
+      },
+      "id": "domain-classifier",
+      "name": "Domain Classifier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "load-domain-config",
+      "name": "Load Domain Config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Style Parameter Randomization\nconst items = $input.all();\nconst configData = $('Load Domain Config').all();\nconst processedItems = [];\n\nconsole.log(`Style randomizer: Processing ${items.length} items with ${configData.length} config responses`);\n\n// Style variation parameters\nconst styleVariations = {\n  tone: ['professional', 'conversational', 'analytical', 'engaging', 'authoritative'],\n  complexity: ['beginner', 'intermediate', 'advanced'],\n  structure: ['listicle', 'analysis', 'news', 'opinion', 'tutorial'],\n  length: ['short', 'medium', 'long'], // 500-800, 800-1500, 1500-2500 words\n  perspective: ['third-person', 'expert-analysis', 'industry-insider']\n};\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const config = configData[i] ? configData[i].json : {};\n  \n  console.log(`Processing item ${i}: ${item.json.content_id}`);\n  \n  // Generate random style parameters within domain constraints\n  const domainConstraints = config.style_parameters || {};\n  const randomizedStyle = {};\n  \n  for (const [param, options] of Object.entries(styleVariations)) {\n    const allowedOptions = domainConstraints[param] || options;\n    randomizedStyle[param] = allowedOptions[Math.floor(Math.random() * allowedOptions.length)];\n  }\n  \n  // Add randomization seed for reproducibility if needed\n  randomizedStyle.seed = Math.random().toString(36).substr(2, 9);\n  \n  // Calculate content length based on style\n  const lengthMapping = {\n    'short': { min: 500, max: 800, target: 650 },\n    'medium': { min: 800, max: 1500, target: 1150 },\n    'long': { min: 1500, max: 2500, target: 2000 }\n  };\n  \n  randomizedStyle.word_count = lengthMapping[randomizedStyle.length];\n  \n  console.log(`Generated style: ${JSON.stringify(randomizedStyle)}`);\n  \n  processedItems.push({\n    json: {\n      ...item.json,\n      domain_config: config,\n      style_parameters: randomizedStyle,\n      generation_prompt_template: config.prompt_template || 'default',\n      quality_thresholds: config.quality_thresholds || { minimum_score: 75 }\n    }\n  });\n}\n\nconsole.log(`Style randomizer: Processed ${processedItems.length} items`);\nreturn processedItems;"
+      },
+      "id": "style-randomizer",
+      "name": "Style Parameter Randomizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "test-output",
+      "name": "Test Output",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "RSS Monitor - Bloomberg Finance": {
+      "main": [
+        [
+          {
+            "node": "Domain Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Domain Classifier": {
+      "main": [
+        [
+          {
+            "node": "Load Domain Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Domain Config": {
+      "main": [
+        [
+          {
+            "node": "Style Parameter Randomizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Style Parameter Randomizer": {
+      "main": [
+        [
+          {
+            "node": "Test Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-12T10:00:00.000Z",
+      "updatedAt": "2025-08-12T10:00:00.000Z",
+      "id": "content-generation-test",
+      "name": "content-generation-test"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-12T10:00:00.000Z",
+  "versionId": "v1.0.0-test"
+}

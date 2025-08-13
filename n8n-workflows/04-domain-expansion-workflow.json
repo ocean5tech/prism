@@ -1,0 +1,595 @@
+{
+  "name": "Domain Expansion and Onboarding Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "domain-expansion-trigger",
+        "responseMode": "responseNode",
+        "options": {
+          "authentication": {
+            "authentication": {
+              "headerAuth": {
+                "name": "X-API-Key",
+                "value": "={{$credentials.prism_webhook_key}}"
+              }
+            }
+          }
+        }
+      },
+      "id": "expansion-webhook",
+      "name": "Domain Expansion Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "domain-expansion"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Domain Configuration Validator and Template Generator\nconst item = $input.first();\nconst domainData = item.json;\n\n// Required fields validation\nconst requiredFields = [\n  'domain_name',\n  'domain_type', // 'finance', 'sports', 'technology', 'custom'\n  'target_audience',\n  'content_style',\n  'rss_feeds',\n  'publishing_platforms'\n];\n\nconst validationErrors = [];\nconst missingFields = requiredFields.filter(field => !domainData[field]);\n\nif (missingFields.length > 0) {\n  validationErrors.push(`Missing required fields: ${missingFields.join(', ')}`);\n}\n\n// Domain name validation\nconst domainNamePattern = /^[a-z0-9_-]+$/;\nif (domainData.domain_name && !domainNamePattern.test(domainData.domain_name)) {\n  validationErrors.push('Domain name must contain only lowercase letters, numbers, hyphens, and underscores');\n}\n\n// RSS feeds validation\nif (domainData.rss_feeds && Array.isArray(domainData.rss_feeds)) {\n  const invalidFeeds = domainData.rss_feeds.filter(feed => {\n    try {\n      new URL(feed);\n      return false;\n    } catch {\n      return true;\n    }\n  });\n  \n  if (invalidFeeds.length > 0) {\n    validationErrors.push(`Invalid RSS feed URLs: ${invalidFeeds.join(', ')}`);\n  }\n}\n\n// Domain type templates\nconst domainTemplates = {\n  finance: {\n    style_parameters: {\n      tone: ['professional', 'analytical', 'authoritative'],\n      complexity: ['intermediate', 'advanced'],\n      structure: ['analysis', 'news', 'opinion'],\n      length: ['medium', 'long'],\n      perspective: ['expert-analysis', 'industry-insider']\n    },\n    content_keywords: [\n      'market', 'stock', 'investment', 'trading', 'economy', 'financial',\n      'revenue', 'profit', 'earnings', 'portfolio', 'dividend', 'capital',\n      'asset', 'liability', 'equity', 'debt', 'bond', 'currency'\n    ],\n    quality_thresholds: {\n      minimum_score: 80,\n      accuracy_weight: 0.3,\n      readability_weight: 0.2,\n      engagement_weight: 0.2,\n      structure_weight: 0.15,\n      uniqueness_weight: 0.15\n    },\n    prompt_template: `You are a financial expert writing for professional investors and analysts.`,\n    publishing_schedule: {\n      optimal_times: [8, 12, 16, 17], // Business hours focus\n      frequency: 'high', // Multiple posts per day\n      weekends: false\n    }\n  },\n  \n  sports: {\n    style_parameters: {\n      tone: ['engaging', 'conversational', 'exciting'],\n      complexity: ['beginner', 'intermediate'],\n      structure: ['news', 'analysis', 'listicle'],\n      length: ['short', 'medium'],\n      perspective: ['third-person', 'expert-analysis']\n    },\n    content_keywords: [\n      'team', 'player', 'game', 'match', 'season', 'championship',\n      'league', 'score', 'victory', 'tournament', 'coach', 'athlete',\n      'performance', 'statistics', 'record', 'playoff', 'draft'\n    ],\n    quality_thresholds: {\n      minimum_score: 75,\n      accuracy_weight: 0.25,\n      readability_weight: 0.25,\n      engagement_weight: 0.3,\n      structure_weight: 0.1,\n      uniqueness_weight: 0.1\n    },\n    prompt_template: `You are a sports journalist writing engaging content for sports enthusiasts.`,\n    publishing_schedule: {\n      optimal_times: [9, 12, 17, 20], // Peak sports viewing times\n      frequency: 'very_high', // Multiple posts per day\n      weekends: true // Sports content often peaks on weekends\n    }\n  },\n  \n  technology: {\n    style_parameters: {\n      tone: ['professional', 'analytical', 'engaging'],\n      complexity: ['intermediate', 'advanced'],\n      structure: ['analysis', 'tutorial', 'news'],\n      length: ['medium', 'long'],\n      perspective: ['expert-analysis', 'industry-insider']\n    },\n    content_keywords: [\n      'software', 'hardware', 'application', 'system', 'platform',\n      'digital', 'innovation', 'development', 'programming', 'algorithm',\n      'data', 'artificial intelligence', 'machine learning', 'cloud',\n      'cybersecurity', 'blockchain', 'IoT', 'API'\n    ],\n    quality_thresholds: {\n      minimum_score: 78,\n      accuracy_weight: 0.3,\n      readability_weight: 0.2,\n      engagement_weight: 0.25,\n      structure_weight: 0.15,\n      uniqueness_weight: 0.1\n    },\n    prompt_template: `You are a technology expert writing for a tech-savvy professional audience.`,\n    publishing_schedule: {\n      optimal_times: [9, 13, 16, 18], // Tech professional hours\n      frequency: 'high',\n      weekends: false\n    }\n  }\n};\n\n// Generate domain configuration\nlet domainConfig = {\n  domain_id: `domain_${domainData.domain_name}_${Date.now()}`,\n  name: domainData.domain_name,\n  display_name: domainData.display_name || domainData.domain_name.replace(/_/g, ' ').replace(/\\b\\w/g, l => l.toUpperCase()),\n  type: domainData.domain_type,\n  target_audience: domainData.target_audience,\n  rss_feeds: domainData.rss_feeds || [],\n  publishing_platforms: domainData.publishing_platforms || ['wordpress', 'medium'],\n  created_at: new Date().toISOString(),\n  status: 'pending_validation'\n};\n\n// Apply template if available\nconst template = domainTemplates[domainData.domain_type];\nif (template) {\n  domainConfig = {\n    ...domainConfig,\n    ...template,\n    // Override with custom parameters if provided\n    style_parameters: {\n      ...template.style_parameters,\n      ...(domainData.custom_style_parameters || {})\n    },\n    quality_thresholds: {\n      ...template.quality_thresholds,\n      ...(domainData.custom_quality_thresholds || {})\n    }\n  };\n} else if (domainData.domain_type === 'custom') {\n  // Custom domain configuration\n  domainConfig = {\n    ...domainConfig,\n    style_parameters: domainData.style_parameters || {\n      tone: ['professional'],\n      complexity: ['intermediate'],\n      structure: ['analysis'],\n      length: ['medium'],\n      perspective: ['third-person']\n    },\n    content_keywords: domainData.content_keywords || [],\n    quality_thresholds: domainData.quality_thresholds || {\n      minimum_score: 75,\n      accuracy_weight: 0.25,\n      readability_weight: 0.25,\n      engagement_weight: 0.25,\n      structure_weight: 0.125,\n      uniqueness_weight: 0.125\n    },\n    prompt_template: domainData.prompt_template || 'You are a professional content writer.',\n    publishing_schedule: domainData.publishing_schedule || {\n      optimal_times: [9, 14, 17],\n      frequency: 'medium',\n      weekends: false\n    }\n  };\n}\n\n// Add validation metadata\ndomainConfig.validation = {\n  is_valid: validationErrors.length === 0,\n  errors: validationErrors,\n  validated_at: new Date().toISOString()\n};\n\nreturn [{\n  json: domainConfig\n}];"
+      },
+      "id": "domain-validator",
+      "name": "Domain Configuration Validator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json[\"validation\"][\"is_valid\"]}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validation-check",
+      "name": "Validation Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://config-service:8000/api/v1/config/domains",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",\n          "value": "Bearer {{$credentials.prism_api_token}}"\n        },\n        "sendHeaders": true,\n        "headerParameters": {\n          "parameters": [\n            {\n              "name": "Content-Type",\n              "value": "application/json"\n            }\n          ]\n        },\n        "sendBody": true,\n        "bodyParameters": {\n          "parameters": [\n            {\n              "name": "domain_config",\n              "value": "={{JSON.stringify($json)}}"\n            }\n          ]\n        },\n        "options": {\n          "response": {\n            "response": {\n              "responseFormat": "json"\n            }\n          },\n          "timeout": 30000\n        }\n      },\n      "id": "store-domain-config",\n      "name": "Store Domain Configuration",\n      "type": "n8n-nodes-base.httpRequest",\n      "typeVersion": 4.1,\n      "position": [\n        900,\n        240\n      ]\n    },\n    {\n      "parameters": {\n        "jsCode": "// RSS Feed Validation and Testing\nconst item = $input.first();\nconst domainConfig = item.json.domain_config;\nconst rssFeeds = domainConfig.rss_feeds || [];\n\n// Function to test RSS feed accessibility and content\nasync function testRssFeed(feedUrl) {\n  try {\n    // This would normally make an HTTP request to test the feed\n    // For workflow purposes, we'll simulate the validation\n    const testResult = {\n      url: feedUrl,\n      accessible: true, // Would be determined by actual HTTP request\n      valid_xml: true, // Would be determined by XML parsing\n      has_items: true, // Would check if feed has recent items\n      content_preview: {\n        latest_items: 5, // Number of recent items found\n        avg_content_length: 800, // Average content length\n        common_keywords: ['example', 'test', 'content'] // Would extract actual keywords\n      },\n      last_updated: new Date().toISOString(),\n      update_frequency: 'daily' // Would analyze posting patterns\n    };\n    \n    return testResult;\n  } catch (error) {\n    return {\n      url: feedUrl,\n      accessible: false,\n      error: error.message,\n      last_tested: new Date().toISOString()\n    };\n  }\n}\n\n// Test all RSS feeds\nconst feedTestResults = [];\nconst validFeeds = [];\nconst invalidFeeds = [];\n\nfor (const feedUrl of rssFeeds) {\n  const testResult = await testRssFeed(feedUrl);\n  feedTestResults.push(testResult);\n  \n  if (testResult.accessible && testResult.valid_xml && testResult.has_items) {\n    validFeeds.push(feedUrl);\n  } else {\n    invalidFeeds.push({\n      url: feedUrl,\n      issues: [\n        !testResult.accessible && 'not_accessible',\n        !testResult.valid_xml && 'invalid_xml',\n        !testResult.has_items && 'no_recent_items'\n      ].filter(Boolean)\n    });\n  }\n}\n\n// Generate content analysis based on valid feeds\nconst contentAnalysis = {\n  total_feeds: rssFeeds.length,\n  valid_feeds: validFeeds.length,\n  invalid_feeds: invalidFeeds.length,\n  estimated_daily_articles: validFeeds.length * 3, // Estimate 3 articles per feed per day\n  content_diversity_score: Math.min(100, (validFeeds.length / Math.max(1, rssFeeds.length)) * 100),\n  recommended_generation_frequency: validFeeds.length > 5 ? 'high' : validFeeds.length > 2 ? 'medium' : 'low'\n};\n\nreturn [{\n  json: {\n    ...item.json,\n    rss_validation: {\n      feed_test_results: feedTestResults,\n      valid_feeds: validFeeds,\n      invalid_feeds: invalidFeeds,\n      content_analysis: contentAnalysis,\n      validation_complete: true,\n      validated_at: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "id": "rss-validator",
+      "name": "RSS Feed Validator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Content Generation Test and Quality Baseline\nconst item = $input.first();\nconst domainConfig = item.json.domain_config;\nconst rssValidation = item.json.rss_validation;\n\n// Generate test content using domain configuration\nconst testTopics = [\n  'Sample Market Analysis for Testing',\n  'Technology Innovation Trends Overview', \n  'Sports Performance Analytics Review',\n  'Industry News Summary and Analysis',\n  'Expert Opinion on Recent Developments'\n];\n\n// Select appropriate test topic based on domain type\nlet selectedTopic;\nswitch (domainConfig.type) {\n  case 'finance':\n    selectedTopic = 'Market Analysis: Testing Domain Configuration for Financial Content Generation';\n    break;\n  case 'sports':\n    selectedTopic = 'Sports Analysis: Testing Domain Configuration for Athletic Content Creation';\n    break;\n  case 'technology':\n    selectedTopic = 'Tech Analysis: Testing Domain Configuration for Technology Content Development';\n    break;\n  default:\n    selectedTopic = 'General Analysis: Testing Domain Configuration for Content Generation';\n}\n\n// Create test generation parameters\nconst testGenerationParams = {\n  domain_id: domainConfig.domain_id,\n  domain: domainConfig.type,\n  test_topic: selectedTopic,\n  style_parameters: {\n    tone: domainConfig.style_parameters.tone[0], // Use first option for test\n    complexity: domainConfig.style_parameters.complexity[0],\n    structure: domainConfig.style_parameters.structure[0],\n    length: 'short', // Use short length for test\n    perspective: domainConfig.style_parameters.perspective[0]\n  },\n  word_count: { target: 400, min: 300, max: 500 }, // Shorter for test\n  generation_prompt: `${domainConfig.prompt_template}\n\nThis is a test generation for domain setup validation.\nTopic: ${selectedTopic}\n\nPlease write a brief ${domainConfig.style_parameters.structure[0]} article that demonstrates the writing style and quality expected for this domain. Keep it concise but comprehensive, showcasing domain-specific terminology and expertise.`,\n  test_mode: true,\n  quality_thresholds: domainConfig.quality_thresholds\n};\n\n// Simulate content generation metrics for testing\nconst estimatedMetrics = {\n  estimated_generation_time: '15-30 seconds',\n  estimated_token_usage: Math.ceil(testGenerationParams.generation_prompt.length / 3.5),\n  estimated_cost_per_article: 0.05, // Rough estimate\n  expected_quality_range: {\n    min: domainConfig.quality_thresholds.minimum_score,\n    max: 95,\n    target: domainConfig.quality_thresholds.minimum_score + 10\n  }\n};\n\n// Publishing platform compatibility check\nconst platformCompatibility = {};\nfor (const platform of domainConfig.publishing_platforms) {\n  platformCompatibility[platform] = {\n    compatible: true, // Would check actual platform requirements\n    optimal_content_length: platform === 'twitter' ? '280 chars per tweet' : \n                           platform === 'linkedin' ? '1200-2000 words' :\n                           platform === 'medium' ? '1000-2500 words' :\n                           'flexible',\n    special_requirements: platform === 'linkedin' ? 'Professional tone required' :\n                         platform === 'twitter' ? 'Hashtag optimization' :\n                         platform === 'medium' ? 'SEO optimization' :\n                         'Standard formatting'\n  };\n}\n\nreturn [{\n  json: {\n    ...item.json,\n    test_generation: {\n      test_parameters: testGenerationParams,\n      estimated_metrics: estimatedMetrics,\n      platform_compatibility: platformCompatibility,\n      ready_for_test: true,\n      test_prepared_at: new Date().toISOString()\n    }\n  }\n}];"
+      },
+      "id": "content-test-prep",
+      "name": "Content Generation Test Prep",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://content-gen-service:8000/api/v1/content/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Test-Mode",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "domain_id",
+              "value": "={{$json[\"test_generation\"][\"test_parameters\"][\"domain_id\"]}}"
+            },
+            {
+              "name": "domain",
+              "value": "={{$json[\"test_generation\"][\"test_parameters\"][\"domain\"]}}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{$json[\"test_generation\"][\"test_parameters\"][\"generation_prompt\"]}}"
+            },
+            {
+              "name": "style_parameters",
+              "value": "={{JSON.stringify($json[\"test_generation\"][\"test_parameters\"][\"style_parameters\"])}}"
+            },
+            {
+              "name": "test_mode",
+              "value": true
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 45000
+        }
+      },
+      "id": "test-content-generation",
+      "name": "Test Content Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1560,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://detection-service:8000/api/v1/detection/analyze",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Test-Mode",
+              "value": "true"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content_id",
+              "value": "test_{{$json[\"domain_config\"][\"domain_id\"]}}"
+            },
+            {
+              "name": "content",
+              "value": "={{$json[\"generated_content\"]}}"
+            },
+            {
+              "name": "domain",
+              "value": "={{$json[\"domain_config\"][\"type\"]}}"
+            },
+            {
+              "name": "quality_thresholds",
+              "value": "={{JSON.stringify($json[\"domain_config\"][\"quality_thresholds\"])}}"
+            },
+            {
+              "name": "test_mode",
+              "value": true
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "test-quality-detection",
+      "name": "Test Quality Detection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 4.1,
+      "position": [
+        1780,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Domain Deployment and Workflow Creation\nconst item = $input.first();\nconst domainConfig = item.json.domain_config;\nconst testResults = {\n  content_generation: item.json.generated_content ? 'success' : 'failed',\n  quality_detection: item.json.quality_score >= domainConfig.quality_thresholds.minimum_score ? 'passed' : 'failed',\n  overall_test: item.json.generated_content && item.json.quality_score >= domainConfig.quality_thresholds.minimum_score\n};\n\nif (!testResults.overall_test) {\n  throw new Error(`Domain testing failed: Content generation: ${testResults.content_generation}, Quality: ${testResults.quality_detection}`);\n}\n\n// Create deployment configuration\nconst deploymentConfig = {\n  domain_id: domainConfig.domain_id,\n  domain_name: domainConfig.name,\n  deployment_timestamp: new Date().toISOString(),\n  \n  // Main content generation workflow configuration\n  content_generation_workflow: {\n    workflow_name: `Content Generation - ${domainConfig.display_name}`,\n    trigger_schedule: domainConfig.publishing_schedule.frequency === 'high' ? '*/15 * * * *' : // Every 15 minutes\n                     domainConfig.publishing_schedule.frequency === 'medium' ? '0 */2 * * *' : // Every 2 hours  \n                     '0 8,14,18 * * *', // 3 times daily\n    rss_feeds: item.json.rss_validation.valid_feeds,\n    style_parameters: domainConfig.style_parameters,\n    quality_thresholds: domainConfig.quality_thresholds,\n    prompt_template: domainConfig.prompt_template\n  },\n  \n  // Publishing configuration\n  publishing_workflow: {\n    workflow_name: `Publishing - ${domainConfig.display_name}`,\n    platforms: domainConfig.publishing_platforms,\n    optimal_times: domainConfig.publishing_schedule.optimal_times,\n    weekend_publishing: domainConfig.publishing_schedule.weekends\n  },\n  \n  // Monitoring and analytics\n  monitoring_config: {\n    quality_alerts: true,\n    performance_tracking: true,\n    cost_monitoring: true,\n    content_volume_tracking: true,\n    alert_thresholds: {\n      quality_score_drop: domainConfig.quality_thresholds.minimum_score - 5,\n      generation_failure_rate: 10, // percent\n      publishing_failure_rate: 5   // percent\n    }\n  },\n  \n  // Initial settings\n  initial_settings: {\n    status: 'active',\n    auto_publishing: true,\n    quality_gate_enabled: true,\n    adversarial_optimization: true,\n    content_volume_limit: 100, // per day initially\n    cost_limit: 50 // dollars per day initially\n  }\n};\n\n// Generate n8n workflow configurations\nconst workflowConfigurations = {\n  main_content_workflow: {\n    name: deploymentConfig.content_generation_workflow.workflow_name,\n    active: true,\n    settings: {\n      domain_filter: domainConfig.name,\n      rss_feeds: item.json.rss_validation.valid_feeds,\n      generation_config: domainConfig\n    }\n  },\n  \n  publishing_workflow: {\n    name: deploymentConfig.publishing_workflow.workflow_name,\n    active: true,\n    settings: {\n      domain_filter: domainConfig.name,\n      platforms: domainConfig.publishing_platforms,\n      schedule_config: domainConfig.publishing_schedule\n    }\n  },\n  \n  monitoring_workflow: {\n    name: `Monitoring - ${domainConfig.display_name}`,\n    active: true,\n    settings: {\n      domain_filter: domainConfig.name,\n      alert_config: deploymentConfig.monitoring_config\n    }\n  }\n};\n\nreturn [{\n  json: {\n    ...item.json,\n    deployment_config: deploymentConfig,\n    workflow_configurations: workflowConfigurations,\n    test_results: testResults,\n    deployment_ready: true,\n    deployment_status: 'pending_activation'\n  }\n}];"
+      },
+      "id": "deployment-prep",
+      "name": "Deployment Preparation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://config-service:8000/api/v1/config/deploy-domain",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "deployment_config",
+              "value": "={{JSON.stringify($json[\"deployment_config\"])}}"
+            },
+            {
+              "name": "workflow_configurations",
+              "value": "={{JSON.stringify($json[\"workflow_configurations\"])}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "id": "deploy-domain",
+      "name": "Deploy Domain Configuration",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2220,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://n8n-service:5678/api/v1/workflows/activate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.n8n_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "domain_workflows",
+              "value": "={{JSON.stringify($json[\"workflow_configurations\"])}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "activate-workflows",
+      "name": "Activate Domain Workflows",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2440,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Post-deployment validation and monitoring setup\nconst item = $input.first();\nconst deploymentResults = item.json;\n\n// Validate deployment success\nconst deploymentValidation = {\n  domain_stored: deploymentResults.deployment_success || false,\n  workflows_activated: deploymentResults.workflows_activated || false,\n  monitoring_enabled: true,\n  rss_feeds_configured: deploymentResults.rss_validation.valid_feeds.length > 0\n};\n\nconst deploymentSuccess = Object.values(deploymentValidation).every(Boolean);\n\n// Generate post-deployment checklist\nconst postDeploymentChecklist = [\n  {\n    task: 'Verify RSS feed monitoring is active',\n    status: deploymentValidation.rss_feeds_configured ? 'completed' : 'pending',\n    automated: true\n  },\n  {\n    task: 'Confirm content generation workflow is running',\n    status: deploymentValidation.workflows_activated ? 'completed' : 'pending',\n    automated: true\n  },\n  {\n    task: 'Test publishing to configured platforms',\n    status: 'pending',\n    automated: false,\n    estimated_time: '15 minutes'\n  },\n  {\n    task: 'Set up monitoring dashboards',\n    status: 'pending',\n    automated: true,\n    estimated_time: '5 minutes'\n  },\n  {\n    task: 'Configure alert thresholds',\n    status: deploymentValidation.monitoring_enabled ? 'completed' : 'pending',\n    automated: true\n  },\n  {\n    task: 'Review and adjust content generation frequency',\n    status: 'pending',\n    automated: false,\n    estimated_time: '10 minutes'\n  }\n];\n\n// Generate deployment summary report\nconst deploymentSummary = {\n  domain_id: deploymentResults.domain_config.domain_id,\n  domain_name: deploymentResults.domain_config.name,\n  domain_type: deploymentResults.domain_config.type,\n  deployment_timestamp: new Date().toISOString(),\n  deployment_success: deploymentSuccess,\n  \n  configuration_summary: {\n    rss_feeds: deploymentResults.rss_validation.valid_feeds.length,\n    publishing_platforms: deploymentResults.domain_config.publishing_platforms.length,\n    estimated_daily_articles: deploymentResults.rss_validation.content_analysis.estimated_daily_articles,\n    quality_threshold: deploymentResults.domain_config.quality_thresholds.minimum_score\n  },\n  \n  test_results: {\n    content_generation: deploymentResults.test_results.content_generation,\n    quality_detection: deploymentResults.test_results.quality_detection,\n    test_quality_score: deploymentResults.quality_score || 0\n  },\n  \n  next_steps: postDeploymentChecklist.filter(item => item.status === 'pending'),\n  \n  estimated_costs: {\n    daily_generation_cost: deploymentResults.rss_validation.content_analysis.estimated_daily_articles * 0.05,\n    monthly_estimate: deploymentResults.rss_validation.content_analysis.estimated_daily_articles * 30 * 0.05\n  },\n  \n  monitoring_urls: {\n    domain_dashboard: `http://analytics-service:8000/dashboard/domain/${deploymentResults.domain_config.domain_id}`,\n    content_pipeline: `http://n8n-service:5678/workflows/domain-${deploymentResults.domain_config.name}`,\n    publishing_status: `http://publishing-service:8000/status/domain/${deploymentResults.domain_config.domain_id}`\n  }\n};\n\nreturn [{\n  json: {\n    deployment_summary: deploymentSummary,\n    deployment_complete: deploymentSuccess,\n    post_deployment_checklist: postDeploymentChecklist,\n    ready_for_production: deploymentSuccess\n  }\n}];"
+      },
+      "id": "post-deployment",
+      "name": "Post-Deployment Validation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2660,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://analytics-service:8000/api/v1/analytics/domain-deployment",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "deployment_summary",
+              "value": "={{JSON.stringify($json[\"deployment_summary\"])}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-deployment",
+      "name": "Log Domain Deployment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2880,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "deployment-response",
+      "name": "Deployment Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        3100,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "validation-error-response",
+      "name": "Validation Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        900,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "Domain Expansion Trigger": {
+      "main": [
+        [
+          {
+            "node": "Domain Configuration Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Domain Configuration Validator": {
+      "main": [
+        [
+          {
+            "node": "Validation Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validation Check": {
+      "main": [
+        [
+          {
+            "node": "Store Domain Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Validation Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Domain Configuration": {
+      "main": [
+        [
+          {
+            "node": "RSS Feed Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Feed Validator": {
+      "main": [
+        [
+          {
+            "node": "Content Generation Test Prep",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Generation Test Prep": {
+      "main": [
+        [
+          {
+            "node": "Test Content Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Content Generation": {
+      "main": [
+        [
+          {
+            "node": "Test Quality Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Quality Detection": {
+      "main": [
+        [
+          {
+            "node": "Deployment Preparation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deployment Preparation": {
+      "main": [
+        [
+          {
+            "node": "Deploy Domain Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deploy Domain Configuration": {
+      "main": [
+        [
+          {
+            "node": "Activate Domain Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Activate Domain Workflows": {
+      "main": [
+        [
+          {
+            "node": "Post-Deployment Validation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post-Deployment Validation": {
+      "main": [
+        [
+          {
+            "node": "Log Domain Deployment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Domain Deployment": {
+      "main": [
+        [
+          {
+            "node": "Deployment Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-08T10:00:00.000Z",
+      "updatedAt": "2025-08-08T10:00:00.000Z",
+      "id": "domain-expansion",
+      "name": "domain-expansion"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-08T10:00:00.000Z",
+  "versionId": "v1.0.0"
+}

@@ -1,0 +1,657 @@
+# GitHub Actions CI/CD Pipeline for Intelligent Content Generation Factory
+name: Prism CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run nightly at 2 AM UTC for full regression testing
+    - cron: '0 2 * * *'
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ============================================================================
+  # Code Quality and Static Analysis
+  # ============================================================================
+  code-quality:
+    name: Code Quality & Static Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install black flake8 mypy bandit safety
+
+    - name: Code formatting check (Black)
+      run: |
+        black --check --diff backend/
+        echo "✅ Code formatting check passed"
+
+    - name: Linting (Flake8)
+      run: |
+        flake8 backend/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 backend/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Type checking (MyPy)
+      run: |
+        mypy backend/services/ --ignore-missing-imports
+        echo "✅ Type checking passed"
+
+    - name: Security scanning (Bandit)
+      run: |
+        bandit -r backend/services/ -f json -o bandit-report.json
+        bandit -r backend/services/ --severity-level medium
+
+    - name: Dependency vulnerability check (Safety)
+      run: |
+        safety check --json --output safety-report.json || true
+        safety check
+
+    - name: Upload security reports
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-reports
+        path: |
+          bandit-report.json
+          safety-report.json
+
+  # ============================================================================
+  # Unit Tests
+  # ============================================================================
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      matrix:
+        service: [content-generation, detection, publishing]
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt
+        pip install pytest pytest-asyncio pytest-cov pytest-mock
+
+    - name: Set up test environment
+      env:
+        DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379
+        CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY_TEST }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY_TEST }}
+      run: |
+        # Create test database schema
+        python -c "
+        import asyncio
+        from backend.shared.database import DatabaseManager
+        asyncio.run(DatabaseManager.create_tables())
+        "
+
+    - name: Run unit tests with coverage
+      env:
+        DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379
+        CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY_TEST }}
+        ENVIRONMENT: testing
+      run: |
+        cd backend/services/${{ matrix.service }}
+        pytest tests/ -v \
+          --cov=app \
+          --cov-report=xml \
+          --cov-report=html \
+          --cov-report=term \
+          --cov-fail-under=80 \
+          --junit-xml=test-results.xml
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: backend/services/${{ matrix.service }}/coverage.xml
+        flags: unittests,${{ matrix.service }}
+        name: ${{ matrix.service }}-coverage
+        fail_ci_if_error: false
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results-${{ matrix.service }}
+        path: |
+          backend/services/${{ matrix.service }}/test-results.xml
+          backend/services/${{ matrix.service }}/htmlcov/
+
+  # ============================================================================
+  # Integration Tests
+  # ============================================================================
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [unit-tests]
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: integration_test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
+      qdrant:
+        image: qdrant/qdrant:latest
+        ports:
+          - 6333:6333
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Start services with Docker Compose
+      run: |
+        cd backend
+        docker-compose -f docker-compose.test.yml up -d --wait
+        sleep 30  # Wait for services to fully start
+
+    - name: Install test dependencies
+      run: |
+        pip install -r testing/requirements.txt
+
+    - name: Run integration tests
+      env:
+        API_BASE_URL: http://localhost:8000
+        DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/integration_test_db
+        REDIS_URL: redis://localhost:6379
+        QDRANT_URL: http://localhost:6333
+        AUTH_TOKEN: ${{ secrets.TEST_AUTH_TOKEN }}
+      run: |
+        python -m pytest testing/integration/ -v \
+          --junit-xml=integration-test-results.xml \
+          --html=integration-test-report.html \
+          --self-contained-html
+
+    - name: Upload integration test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: integration-test-results
+        path: |
+          integration-test-results.xml
+          integration-test-report.html
+
+    - name: Cleanup services
+      if: always()
+      run: |
+        cd backend
+        docker-compose -f docker-compose.test.yml down -v
+
+  # ============================================================================
+  # Performance Tests
+  # ============================================================================
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: [integration-tests]
+    if: github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'performance-test')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Start performance test environment
+      run: |
+        cd backend
+        docker-compose -f docker-compose.performance.yml up -d --wait
+        sleep 60  # Extended wait for performance environment
+
+    - name: Install performance test dependencies
+      run: |
+        pip install -r testing/requirements.txt
+        pip install locust
+
+    - name: Run performance tests
+      env:
+        API_BASE_URL: http://localhost:8000
+        AUTH_TOKEN: ${{ secrets.TEST_AUTH_TOKEN }}
+      run: |
+        # Run comprehensive performance test suite
+        python testing/performance/load_testing_suite.py
+
+    - name: Upload performance test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-test-results
+        path: |
+          /tmp/performance_test_report.json
+          /tmp/*.html
+
+    - name: Performance regression check
+      run: |
+        python testing/scripts/performance_regression_check.py \
+          --baseline-file=performance-baseline.json \
+          --current-file=/tmp/performance_test_report.json
+
+  # ============================================================================
+  # Security Tests
+  # ============================================================================
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [integration-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Start security test environment
+      run: |
+        cd backend
+        docker-compose -f docker-compose.test.yml up -d --wait
+        sleep 30
+
+    - name: Install security test dependencies
+      run: |
+        pip install -r testing/requirements.txt
+
+    - name: Run security tests
+      env:
+        API_BASE_URL: http://localhost:8000
+        DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+      run: |
+        python testing/security/security_testing_framework.py
+
+    - name: OWASP ZAP Security Scan
+      uses: zaproxy/action-baseline@v0.7.0
+      with:
+        target: 'http://localhost:8000'
+        rules_file_name: '.zap/rules.tsv'
+        cmd_options: '-a -j -m 5 -T 60'
+
+    - name: Upload security test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-test-results
+        path: |
+          /tmp/security_test_report.json
+          report_html.html
+          report_json.json
+
+  # ============================================================================
+  # End-to-End Tests
+  # ============================================================================
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [integration-tests]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js (for n8n)
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Start complete system
+      run: |
+        cd backend
+        docker-compose -f docker-compose.yml up -d --wait
+        cd ../n8n-workflows
+        docker-compose -f deployment/docker-compose.yml up -d --wait
+        sleep 120  # Extended wait for complete system startup
+
+    - name: Install e2e test dependencies
+      run: |
+        pip install -r testing/requirements.txt
+
+    - name: Import n8n workflows
+      run: |
+        # Import test workflows to n8n
+        python testing/scripts/import_test_workflows.py
+
+    - name: Run end-to-end tests
+      env:
+        API_BASE_URL: http://localhost:8000
+        N8N_URL: http://localhost:5678
+        AUTH_TOKEN: ${{ secrets.TEST_AUTH_TOKEN }}
+        N8N_AUTH: ${{ secrets.N8N_TEST_AUTH }}
+      run: |
+        python -m pytest testing/e2e/ -v \
+          --junit-xml=e2e-test-results.xml \
+          --html=e2e-test-report.html
+
+    - name: Upload e2e test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: e2e-test-results
+        path: |
+          e2e-test-results.xml
+          e2e-test-report.html
+
+    - name: Collect system logs
+      if: failure()
+      run: |
+        mkdir -p logs
+        docker-compose -f backend/docker-compose.yml logs > logs/backend-services.log
+        docker-compose -f n8n-workflows/deployment/docker-compose.yml logs > logs/n8n-workflows.log
+
+    - name: Upload system logs
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: system-logs
+        path: logs/
+
+  # ============================================================================
+  # Build and Package
+  # ============================================================================
+  build:
+    name: Build and Package
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [unit-tests, code-quality]
+    
+    outputs:
+      image-digest: ${{ steps.build.outputs.digest }}
+      image-tags: ${{ steps.meta.outputs.tags }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=ref,event=pr
+          type=sha,prefix={{branch}}-
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker images
+      id: build
+      uses: docker/build-push-action@v5
+      with:
+        context: backend/
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        build-args: |
+          BUILD_DATE=${{ github.event.head_commit.timestamp }}
+          VCS_REF=${{ github.sha }}
+          VERSION=${{ steps.meta.outputs.version }}
+
+  # ============================================================================
+  # Deploy to Staging
+  # ============================================================================
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [build, integration-tests, security-tests]
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to staging environment
+      env:
+        KUBECONFIG: ${{ secrets.STAGING_KUBECONFIG }}
+        IMAGE_DIGEST: ${{ needs.build.outputs.image-digest }}
+      run: |
+        # Update Kubernetes manifests with new image
+        sed -i "s|IMAGE_PLACEHOLDER|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ env.IMAGE_DIGEST }}|g" k8s/staging/*.yaml
+        
+        # Apply Kubernetes manifests
+        kubectl apply -f k8s/staging/
+        
+        # Wait for rollout to complete
+        kubectl rollout status deployment/content-generation-service -n staging --timeout=300s
+        kubectl rollout status deployment/detection-service -n staging --timeout=300s
+        kubectl rollout status deployment/publishing-service -n staging --timeout=300s
+
+    - name: Run staging smoke tests
+      env:
+        STAGING_API_URL: https://staging-api.prism.example.com
+        AUTH_TOKEN: ${{ secrets.STAGING_AUTH_TOKEN }}
+      run: |
+        python testing/smoke/staging_smoke_tests.py
+
+  # ============================================================================
+  # Deploy to Production
+  # ============================================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build, e2e-tests, performance-tests]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Blue-Green Deployment to Production
+      env:
+        KUBECONFIG: ${{ secrets.PRODUCTION_KUBECONFIG }}
+        IMAGE_DIGEST: ${{ needs.build.outputs.image-digest }}
+      run: |
+        # Implement blue-green deployment
+        python scripts/blue_green_deploy.py \
+          --image "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ env.IMAGE_DIGEST }}" \
+          --environment production
+
+    - name: Production health check
+      env:
+        PRODUCTION_API_URL: https://api.prism.example.com
+        AUTH_TOKEN: ${{ secrets.PRODUCTION_AUTH_TOKEN }}
+      run: |
+        python testing/health_check/production_health_check.py
+
+    - name: Notify deployment success
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        channel: '#deployments'
+        text: 'Production deployment successful! 🚀'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # ============================================================================
+  # Quality Gates and Reporting
+  # ============================================================================
+  quality-gate:
+    name: Quality Gate
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, security-tests]
+    if: always()
+    
+    steps:
+    - name: Evaluate quality gate
+      env:
+        UNIT_TEST_RESULT: ${{ needs.unit-tests.result }}
+        INTEGRATION_TEST_RESULT: ${{ needs.integration-tests.result }}
+        SECURITY_TEST_RESULT: ${{ needs.security-tests.result }}
+      run: |
+        python -c "
+        import sys
+        results = {
+            'unit': '${{ env.UNIT_TEST_RESULT }}',
+            'integration': '${{ env.INTEGRATION_TEST_RESULT }}',
+            'security': '${{ env.SECURITY_TEST_RESULT }}'
+        }
+        
+        failed = [k for k, v in results.items() if v == 'failure']
+        
+        if failed:
+            print(f'Quality gate FAILED. Failed stages: {failed}')
+            sys.exit(1)
+        else:
+            print('Quality gate PASSED. All tests successful.')
+        "
+
+    - name: Generate test report
+      if: always()
+      run: |
+        echo '# Test Results Summary' > test_summary.md
+        echo '## Quality Gate: ${{ job.status == 'success' && '✅ PASSED' || '❌ FAILED' }}' >> test_summary.md
+        echo '' >> test_summary.md
+        echo '| Test Stage | Status |' >> test_summary.md
+        echo '|------------|--------|' >> test_summary.md
+        echo '| Unit Tests | ${{ needs.unit-tests.result == 'success' && '✅' || '❌' }} |' >> test_summary.md
+        echo '| Integration Tests | ${{ needs.integration-tests.result == 'success' && '✅' || '❌' }} |' >> test_summary.md
+        echo '| Security Tests | ${{ needs.security-tests.result == 'success' && '✅' || '❌' }} |' >> test_summary.md
+
+    - name: Comment test results on PR
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const testSummary = fs.readFileSync('test_summary.md', 'utf8');
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: testSummary
+          });
+
+  # ============================================================================
+  # Cleanup
+  # ============================================================================
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [quality-gate]
+    if: always()
+    
+    steps:
+    - name: Clean up test artifacts
+      run: |
+        # Cleanup any temporary resources created during testing
+        echo "Cleaning up test resources..."
+        
+        # Remove old test reports (keep last 10)
+        # This would typically interact with your artifact storage
+        echo "Cleanup completed"
+
+# ============================================================================
+# Workflow Configuration
+# ============================================================================
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+# Global timeout for all jobs
+defaults:
+  run:
+    shell: bash

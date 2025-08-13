@@ -1,0 +1,114 @@
+{
+  "name": "RSS Test - Simple HTTP",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rss-test-http",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        120,
+        300
+      ],
+      "webhookId": "rss-test-http"
+    },
+    {
+      "parameters": {
+        "url": "https://feeds.bloomberg.com/markets/news.rss",
+        "options": {}
+      },
+      "id": "http-request-rss",
+      "name": "HTTP Request - Bloomberg RSS",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse RSS XML and extract items\nconst items = $input.all();\nconsole.log(`=== RSS Feed Analysis ===`);\nconsole.log(`Total inputs received: ${items.length}`);\n\nconst results = [];\n\nfor (const item of items) {\n  const xmlData = item.json.data || item.json;\n  console.log(`XML Data type: ${typeof xmlData}`);\n  console.log(`XML Data sample: ${JSON.stringify(xmlData).substring(0, 200)}...`);\n  \n  // Simple XML parsing for RSS items\n  const xmlString = typeof xmlData === 'string' ? xmlData : JSON.stringify(xmlData);\n  \n  // Extract RSS items using regex (basic parsing)\n  const itemMatches = xmlString.match(/<item[^>]*>([\\s\\S]*?)<\\/item>/gi) || [];\n  console.log(`Found ${itemMatches.length} RSS items`);\n  \n  for (let i = 0; i < Math.min(itemMatches.length, 3); i++) {\n    const itemXml = itemMatches[i];\n    \n    // Extract title\n    const titleMatch = itemXml.match(/<title[^>]*><!\\[CDATA\\[(.*?)\\]\\]><\\/title>/i) || \n                      itemXml.match(/<title[^>]*>(.*?)<\\/title>/i);\n    const title = titleMatch ? titleMatch[1].trim() : 'No title';\n    \n    // Extract description\n    const descMatch = itemXml.match(/<description[^>]*><!\\[CDATA\\[(.*?)\\]\\]><\\/description>/i) || \n                     itemXml.match(/<description[^>]*>(.*?)<\\/description>/i);\n    const description = descMatch ? descMatch[1].trim() : 'No description';\n    \n    // Extract link\n    const linkMatch = itemXml.match(/<link[^>]*>(.*?)<\\/link>/i);\n    const link = linkMatch ? linkMatch[1].trim() : 'No link';\n    \n    // Extract pubDate\n    const dateMatch = itemXml.match(/<pubDate[^>]*>(.*?)<\\/pubDate>/i);\n    const pubDate = dateMatch ? dateMatch[1].trim() : 'No date';\n    \n    console.log(`\\n--- Item ${i+1} ---`);\n    console.log(`Title: ${title}`);\n    console.log(`Description: ${description.substring(0, 100)}...`);\n    console.log(`Link: ${link}`);\n    console.log(`PubDate: ${pubDate}`);\n    \n    results.push({\n      json: {\n        item_number: i + 1,\n        title: title,\n        description: description,\n        link: link,\n        pubDate: pubDate,\n        xml_sample: itemXml.substring(0, 300) + '...'\n      }\n    });\n  }\n}\n\nconsole.log(`\\n=== Analysis Complete ===`);\nconsole.log(`Returning ${results.length} parsed items`);\nreturn results;"
+      },
+      "id": "rss-parser",
+      "name": "RSS XML Parser",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request - Bloomberg RSS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request - Bloomberg RSS": {
+      "main": [
+        [
+          {
+            "node": "RSS XML Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS XML Parser": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-12T10:00:00.000Z",
+      "updatedAt": "2025-08-12T10:00:00.000Z",
+      "id": "rss-test-http",
+      "name": "rss-test-http"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-12T10:00:00.000Z",
+  "versionId": "v1.0.0-http-test"
+}

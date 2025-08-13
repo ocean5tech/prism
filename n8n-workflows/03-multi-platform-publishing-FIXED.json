@@ -1,0 +1,970 @@
+{
+  "name": "Multi-Platform Publishing Workflow - FIXED",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "publishing-trigger",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "headerAuth": {
+          "name": "X-API-Key",
+          "value": "={{$credentials.prism_webhook_key}}"
+        }
+      },
+      "id": "publishing-webhook",
+      "name": "Publishing Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ],
+      "webhookId": "publishing-trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Content validation and platform preparation\nconst item = $input.first();\nconst content = item.json.content;\nconst platforms = item.json.platforms || [];\nconst domain = item.json.domain;\nconst contentId = item.json.content_id;\n\n// Validate required fields\nif (!content || !contentId) {\n  throw new Error('Missing required content or content_id');\n}\n\n// Platform-specific content formatting requirements\nconst platformRequirements = {\n  wordpress: {\n    max_title_length: 60,\n    max_excerpt_length: 160,\n    supports_html: true,\n    requires_featured_image: true,\n    seo_optimization: true\n  },\n  medium: {\n    max_title_length: 100,\n    max_subtitle_length: 140,\n    supports_html: true,\n    markdown_preferred: true,\n    requires_tags: true\n  },\n  linkedin: {\n    max_title_length: 70,\n    max_content_length: 3000,\n    supports_html: false,\n    requires_hashtags: true,\n    professional_tone: true\n  },\n  twitter: {\n    max_content_length: 280,\n    supports_threads: true,\n    requires_hashtags: true,\n    optimal_time_sensitive: true\n  },\n  facebook: {\n    max_title_length: 40,\n    optimal_content_length: 1200,\n    supports_html: false,\n    engagement_focused: true\n  }\n};\n\n// Extract content elements\nconst lines = content.split('\\n').filter(line => line.trim().length > 0);\nconst title = lines[0].replace(/^#+\\s*/, '').trim(); // Remove markdown headers\nconst mainContent = lines.slice(1).join('\\n').trim();\n\n// Generate excerpt/summary\nconst words = mainContent.split(' ');\nconst excerpt = words.slice(0, 30).join(' ') + (words.length > 30 ? '...' : '');\n\n// Domain-specific hashtags and categories\nconst domainHashtags = {\n  finance: ['#Finance', '#Investment', '#MarketAnalysis', '#Economy', '#Trading'],\n  sports: ['#Sports', '#Athletics', '#GameAnalysis', '#SportsNews', '#Performance'],\n  technology: ['#Technology', '#Innovation', '#TechNews', '#DigitalTransformation', '#AI'],\n  general: ['#News', '#Analysis', '#Insights', '#Trending', '#Update']\n};\n\nconst hashtags = domainHashtags[domain] || domainHashtags.general;\n\n// Create publishing jobs for each platform\nconst publishingJobs = [];\n\nfor (const platform of platforms) {\n  const requirements = platformRequirements[platform];\n  if (!requirements) continue;\n  \n  let formattedContent = {\n    platform: platform,\n    content_id: contentId,\n    original_content: content,\n    domain: domain\n  };\n  \n  // Platform-specific formatting\n  switch (platform) {\n    case 'wordpress':\n      formattedContent = {\n        ...formattedContent,\n        title: title.substring(0, requirements.max_title_length),\n        content: mainContent,\n        excerpt: excerpt.substring(0, requirements.max_excerpt_length),\n        category: domain,\n        tags: hashtags.map(tag => tag.replace('#', '')),\n        status: 'publish',\n        format: 'standard'\n      };\n      break;\n      \n    case 'medium':\n      formattedContent = {\n        ...formattedContent,\n        title: title.substring(0, requirements.max_title_length),\n        content: mainContent,\n        contentFormat: 'markdown',\n        tags: hashtags.map(tag => tag.replace('#', '')).slice(0, 5),\n        publishStatus: 'public',\n        license: 'all-rights-reserved'\n      };\n      break;\n      \n    case 'linkedin':\n      // LinkedIn requires more concise content\n      const linkedinContent = mainContent.length > requirements.max_content_length \n        ? mainContent.substring(0, requirements.max_content_length - 50) + '... (continued in comments)'\n        : mainContent;\n        \n      formattedContent = {\n        ...formattedContent,\n        content: `${title}\\n\\n${linkedinContent}\\n\\n${hashtags.slice(0, 5).join(' ')}`,\n        visibility: 'PUBLIC'\n      };\n      break;\n      \n    case 'twitter':\n      // Create Twitter thread if content is long\n      const maxTweetLength = requirements.max_content_length - 50; // Reserve space for hashtags\n      const tweets = [];\n      \n      // First tweet with title\n      tweets.push(`${title} ${hashtags.slice(0, 3).join(' ')} (1/n)`);\n      \n      // Split content into tweets\n      const contentWords = mainContent.split(' ');\n      let currentTweet = '';\n      let tweetCount = 2;\n      \n      for (const word of contentWords) {\n        if ((currentTweet + ' ' + word).length <= maxTweetLength) {\n          currentTweet += (currentTweet ? ' ' : '') + word;\n        } else {\n          tweets.push(`${currentTweet} (${tweetCount}/n)`);\n          currentTweet = word;\n          tweetCount++;\n        }\n      }\n      \n      if (currentTweet) {\n        tweets.push(`${currentTweet} (${tweetCount}/n)`);\n      }\n      \n      formattedContent = {\n        ...formattedContent,\n        tweets: tweets,\n        thread: true\n      };\n      break;\n      \n    case 'facebook':\n      const fbContent = `${title}\\n\\n${mainContent}`;\n      formattedContent = {\n        ...formattedContent,\n        message: fbContent.length > 1200 ? fbContent.substring(0, 1200) + '...' : fbContent,\n        link: '', // Will be filled with published URL\n        privacy: 'EVERYONE'\n      };\n      break;\n  }\n  \n  publishingJobs.push({\n    json: {\n      ...formattedContent,\n      scheduled_time: new Date().toISOString(),\n      priority: 'normal',\n      retry_count: 0,\n      max_retries: 3\n    }\n  });\n}\n\nreturn publishingJobs;"
+      },
+      "id": "content-formatter",
+      "name": "Platform Content Formatter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Intelligent publishing schedule optimization\nconst items = $input.all();\nconst processedItems = [];\n\n// Platform-specific optimal posting times (UTC)\nconst optimalTimes = {\n  wordpress: {\n    weekdays: [9, 14, 16], // 9 AM, 2 PM, 4 PM\n    weekends: [10, 15]\n  },\n  medium: {\n    weekdays: [8, 13, 17], // 8 AM, 1 PM, 5 PM  \n    weekends: [11, 16]\n  },\n  linkedin: {\n    weekdays: [8, 12, 17, 18], // Business hours focus\n    weekends: [10, 14]\n  },\n  twitter: {\n    weekdays: [9, 12, 15, 17, 19], // Multiple daily peaks\n    weekends: [10, 13, 16, 20]\n  },\n  facebook: {\n    weekdays: [13, 15, 19], // Afternoon and evening\n    weekends: [12, 14, 16]\n  }\n};\n\n// Calculate next optimal posting time for each platform\nfunction getNextOptimalTime(platform, currentTime = new Date()) {\n  const times = optimalTimes[platform];\n  if (!times) return currentTime;\n  \n  const now = new Date(currentTime);\n  const isWeekend = now.getDay() === 0 || now.getDay() === 6;\n  const applicableTimes = isWeekend ? times.weekends : times.weekdays;\n  \n  // Find next optimal time today\n  const currentHour = now.getUTCHours();\n  const todayTimes = applicableTimes.filter(hour => hour > currentHour);\n  \n  if (todayTimes.length > 0) {\n    // Use next optimal time today\n    const nextHour = todayTimes[0];\n    const scheduledTime = new Date(now);\n    scheduledTime.setUTCHours(nextHour, Math.floor(Math.random() * 15), 0, 0); // Random minutes 0-15\n    return scheduledTime;\n  } else {\n    // Schedule for tomorrow's first optimal time\n    const tomorrow = new Date(now);\n    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);\n    const tomorrowIsWeekend = tomorrow.getDay() === 0 || tomorrow.getDay() === 6;\n    const tomorrowTimes = tomorrowIsWeekend ? times.weekends : times.weekdays;\n    \n    tomorrow.setUTCHours(tomorrowTimes[0], Math.floor(Math.random() * 15), 0, 0);\n    return tomorrow;\n  }\n}\n\n// Add spacing between similar content types\nconst platformSchedules = {};\n\nfor (const item of items) {\n  const platform = item.json.platform;\n  const domain = item.json.domain;\n  \n  if (!platformSchedules[platform]) {\n    platformSchedules[platform] = [];\n  }\n  \n  // Get optimal time\n  const baseTime = getNextOptimalTime(platform);\n  \n  // Add spacing for same domain content (15-30 minutes apart)\n  const samedomainCount = platformSchedules[platform].filter(p => p.domain === domain).length;\n  const spacingMinutes = 15 + (samedomainCount * 15);\n  \n  const scheduledTime = new Date(baseTime.getTime() + (spacingMinutes * 60000));\n  \n  platformSchedules[platform].push({\n    domain: domain,\n    scheduledTime: scheduledTime\n  });\n  \n  processedItems.push({\n    json: {\n      ...item.json,\n      scheduled_time: scheduledTime.toISOString(),\n      optimal_timing: true,\n      spacing_applied: spacingMinutes,\n      publishing_strategy: 'optimized_timing'\n    }\n  });\n}\n\nreturn processedItems;"
+      },
+      "id": "schedule-optimizer",
+      "name": "Publishing Schedule Optimizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json[\"platform\"]}}",
+              "rightValue": "wordpress",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "wordpress-route",
+      "name": "WordPress Route",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json[\"platform\"]}}",
+              "rightValue": "medium",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "medium-route",
+      "name": "Medium Route",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json[\"platform\"]}}",
+              "rightValue": "linkedin",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "linkedin-route",
+      "name": "LinkedIn Route",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json[\"platform\"]}}",
+              "rightValue": "twitter",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "twitter-route",
+      "name": "Twitter Route",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8010/api/v1/publishing/wordpress",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{$json[\"title\"]}}"
+            },
+            {
+              "name": "content",
+              "value": "={{$json[\"content\"]}}"
+            },
+            {
+              "name": "excerpt",
+              "value": "={{$json[\"excerpt\"]}}"
+            },
+            {
+              "name": "category",
+              "value": "={{$json[\"category\"]}}"
+            },
+            {
+              "name": "tags",
+              "value": "={{JSON.stringify($json[\"tags\"])}}"
+            },
+            {
+              "name": "status",
+              "value": "={{$json[\"status\"]}}"
+            },
+            {
+              "name": "scheduled_time",
+              "value": "={{$json[\"scheduled_time\"]}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "wordpress-publisher",
+      "name": "WordPress Publisher",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1120,
+        140
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8010/api/v1/publishing/medium",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{$json[\"title\"]}}"
+            },
+            {
+              "name": "content",
+              "value": "={{$json[\"content\"]}}"
+            },
+            {
+              "name": "contentFormat",
+              "value": "={{$json[\"contentFormat\"]}}"
+            },
+            {
+              "name": "tags",
+              "value": "={{JSON.stringify($json[\"tags\"])}}"
+            },
+            {
+              "name": "publishStatus",
+              "value": "={{$json[\"publishStatus\"]}}"
+            },
+            {
+              "name": "scheduled_time",
+              "value": "={{$json[\"scheduled_time\"]}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "medium-publisher",
+      "name": "Medium Publisher",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1120,
+        240
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8010/api/v1/publishing/linkedin",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "={{$json[\"content\"]}}"
+            },
+            {
+              "name": "visibility",
+              "value": "={{$json[\"visibility\"]}}"
+            },
+            {
+              "name": "scheduled_time",
+              "value": "={{$json[\"scheduled_time\"]}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "linkedin-publisher",
+      "name": "LinkedIn Publisher",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1120,
+        340
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8010/api/v1/publishing/twitter",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "tweets",
+              "value": "={{JSON.stringify($json[\"tweets\"])}}"
+            },
+            {
+              "name": "thread",
+              "value": "={{$json[\"thread\"]}}"
+            },
+            {
+              "name": "scheduled_time",
+              "value": "={{$json[\"scheduled_time\"]}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "twitter-publisher",
+      "name": "Twitter Publisher",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1120,
+        440
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json[\"success\"] || false}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "publishing-success-check",
+      "name": "Publishing Success Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8015/api/v1/analytics/publishing-success",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content_id",
+              "value": "={{$json[\"content_id\"]}}"
+            },
+            {
+              "name": "platform",
+              "value": "={{$json[\"platform\"]}}"
+            },
+            {
+              "name": "publication_id",
+              "value": "={{$json[\"publication_id\"]}}"
+            },
+            {
+              "name": "publication_url",
+              "value": "={{$json[\"publication_url\"]}}"
+            },
+            {
+              "name": "scheduled_time",
+              "value": "={{$json[\"scheduled_time\"]}}"
+            },
+            {
+              "name": "actual_publish_time",
+              "value": "={{$json[\"published_at\"]}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-success",
+      "name": "Log Publishing Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1560,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Advanced error analysis and retry strategy\nconst item = $input.first();\nconst error = item.json.error || {};\nconst platform = item.json.platform;\nconst retryCount = (item.json.retry_count || 0) + 1;\nconst maxRetries = item.json.max_retries || 3;\n\n// Categorize error types for different retry strategies\nconst errorCategories = {\n  rate_limit: ['rate limit', 'too many requests', '429'],\n  authentication: ['unauthorized', 'authentication', 'token', '401'],\n  server_error: ['internal server error', '500', '502', '503', '504'],\n  content_issue: ['content', 'validation', 'format', '400'],\n  network: ['timeout', 'connection', 'network']\n};\n\nfunction categorizeError(errorMessage) {\n  const message = errorMessage.toLowerCase();\n  for (const [category, keywords] of Object.entries(errorCategories)) {\n    if (keywords.some(keyword => message.includes(keyword))) {\n      return category;\n    }\n  }\n  return 'unknown';\n}\n\nconst errorCategory = categorizeError(error.message || '');\n\n// Define retry strategies based on error type\nconst retryStrategies = {\n  rate_limit: {\n    should_retry: retryCount <= maxRetries,\n    wait_time: Math.pow(2, retryCount) * 60000, // Exponential backoff in minutes\n    modification_needed: false\n  },\n  authentication: {\n    should_retry: retryCount <= 2, // Limited retries for auth issues\n    wait_time: 30000, // 30 seconds\n    modification_needed: true,\n    modification_type: 'refresh_credentials'\n  },\n  server_error: {\n    should_retry: retryCount <= maxRetries,\n    wait_time: Math.pow(2, retryCount) * 30000, // Exponential backoff\n    modification_needed: false\n  },\n  content_issue: {\n    should_retry: retryCount <= 2,\n    wait_time: 10000,\n    modification_needed: true,\n    modification_type: 'reformat_content'\n  },\n  network: {\n    should_retry: retryCount <= maxRetries,\n    wait_time: 15000 * retryCount, // Linear backoff\n    modification_needed: false\n  },\n  unknown: {\n    should_retry: retryCount <= Math.min(2, maxRetries),\n    wait_time: 30000,\n    modification_needed: false\n  }\n};\n\nconst strategy = retryStrategies[errorCategory];\n\n// Calculate next retry time\nconst nextRetryTime = new Date(Date.now() + strategy.wait_time);\n\n// Prepare retry payload\nconst retryData = {\n  ...item.json,\n  retry_count: retryCount,\n  error_category: errorCategory,\n  error_message: error.message,\n  next_retry_time: nextRetryTime.toISOString(),\n  should_retry: strategy.should_retry,\n  modification_needed: strategy.modification_needed,\n  modification_type: strategy.modification_type || null,\n  retry_strategy: errorCategory\n};\n\n// Content modifications for specific error types\nif (strategy.modification_needed && strategy.modification_type === 'reformat_content') {\n  if (platform === 'twitter' && item.json.tweets) {\n    // Shorten tweets if too long\n    retryData.tweets = item.json.tweets.map(tweet => \n      tweet.length > 250 ? tweet.substring(0, 247) + '...' : tweet\n    );\n  } else if (platform === 'linkedin' && item.json.content) {\n    // Ensure LinkedIn content meets requirements\n    retryData.content = item.json.content.substring(0, 2900) + '...';\n  }\n}\n\nreturn [{\n  json: retryData\n}];"
+      },
+      "id": "error-handler",
+      "name": "Advanced Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json[\"should_retry\"]}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "retry-decision",
+      "name": "Should Retry?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "amount": "={{Math.round($json[\"next_retry_time\"] ? new Date($json[\"next_retry_time\"]).getTime() - Date.now() : 30000) / 1000}}",
+        "unit": "seconds"
+      },
+      "id": "wait-for-retry",
+      "name": "Wait for Retry",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8015/api/v1/analytics/publishing-failure",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content_id",
+              "value": "={{$json[\"content_id\"]}}"
+            },
+            {
+              "name": "platform",
+              "value": "={{$json[\"platform\"]}}"
+            },
+            {
+              "name": "error_category",
+              "value": "={{$json[\"error_category\"]}}"
+            },
+            {
+              "name": "error_message",
+              "value": "={{$json[\"error_message\"]}}"
+            },
+            {
+              "name": "retry_count",
+              "value": "={{$json[\"retry_count\"]}}"
+            },
+            {
+              "name": "final_failure",
+              "value": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-failure",
+      "name": "Log Publishing Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2000,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Performance tracking and cross-platform correlation\nconst successfulPublications = $input.all();\nconst performanceData = [];\n\nfor (const publication of successfulPublications) {\n  const pub = publication.json;\n  \n  performanceData.push({\n    content_id: pub.content_id,\n    platform: pub.platform,\n    domain: pub.domain,\n    publication_id: pub.publication_id,\n    publication_url: pub.publication_url,\n    scheduled_time: pub.scheduled_time,\n    actual_publish_time: pub.published_at,\n    optimal_timing_used: pub.optimal_timing || false,\n    publishing_delay: pub.published_at && pub.scheduled_time ? \n      new Date(pub.published_at).getTime() - new Date(pub.scheduled_time).getTime() : 0\n  });\n}\n\n// Calculate batch metrics\nconst batchMetrics = {\n  total_publications: performanceData.length,\n  platforms_used: [...new Set(performanceData.map(p => p.platform))],\n  domains_covered: [...new Set(performanceData.map(p => p.domain))],\n  average_delay: performanceData.reduce((sum, p) => sum + (p.publishing_delay || 0), 0) / performanceData.length,\n  optimal_timing_percentage: (performanceData.filter(p => p.optimal_timing_used).length / performanceData.length) * 100\n};\n\nreturn [{\n  json: {\n    batch_id: `batch_${Date.now()}`,\n    performance_data: performanceData,\n    batch_metrics: batchMetrics,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "performance-tracker",
+      "name": "Performance Tracker",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1780,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8015/api/v1/analytics/publishing-batch",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "batch_data",
+              "value": "={{JSON.stringify($json)}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "store-batch-analytics",
+      "name": "Store Batch Analytics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2000,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Publishing Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2220,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Publishing Trigger": {
+      "main": [
+        [
+          {
+            "node": "Platform Content Formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Platform Content Formatter": {
+      "main": [
+        [
+          {
+            "node": "Publishing Schedule Optimizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publishing Schedule Optimizer": {
+      "main": [
+        [
+          {
+            "node": "WordPress Route",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Medium Route",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "LinkedIn Route",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Twitter Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "WordPress Route": {
+      "main": [
+        [
+          {
+            "node": "WordPress Publisher",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Medium Route": {
+      "main": [
+        [
+          {
+            "node": "Medium Publisher",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "LinkedIn Route": {
+      "main": [
+        [
+          {
+            "node": "LinkedIn Publisher",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Twitter Route": {
+      "main": [
+        [
+          {
+            "node": "Twitter Publisher",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "WordPress Publisher": {
+      "main": [
+        [
+          {
+            "node": "Publishing Success Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Medium Publisher": {
+      "main": [
+        [
+          {
+            "node": "Publishing Success Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LinkedIn Publisher": {
+      "main": [
+        [
+          {
+            "node": "Publishing Success Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Twitter Publisher": {
+      "main": [
+        [
+          {
+            "node": "Publishing Success Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publishing Success Check": {
+      "main": [
+        [
+          {
+            "node": "Log Publishing Success",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Performance Tracker",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Advanced Error Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Advanced Error Handler": {
+      "main": [
+        [
+          {
+            "node": "Should Retry?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Should Retry?": {
+      "main": [
+        [
+          {
+            "node": "Wait for Retry",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Publishing Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Retry": {
+      "main": [
+        [
+          {
+            "node": "Publishing Schedule Optimizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Performance Tracker": {
+      "main": [
+        [
+          {
+            "node": "Store Batch Analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Batch Analytics": {
+      "main": [
+        [
+          {
+            "node": "Publishing Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Publishing Success": {
+      "main": [
+        [
+          {
+            "node": "Publishing Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Publishing Failure": {
+      "main": [
+        [
+          {
+            "node": "Publishing Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-12T12:00:00.000Z",
+      "updatedAt": "2025-08-12T12:00:00.000Z",
+      "id": "multi-publishing",
+      "name": "multi-publishing"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-12T12:00:00.000Z",
+  "versionId": "v1.0.1-fixed"
+}

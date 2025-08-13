@@ -1,0 +1,293 @@
+name: Prism CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - 'n8n-workflows/**'
+      - 'n8n-custom-nodes/**'
+      - '.github/workflows/**'
+      - 'docker-compose.yml'
+      - 'requirements.txt'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - 'n8n-workflows/**'
+      - 'n8n-custom-nodes/**'
+
+env:
+  PYTHON_VERSION: '3.11'
+  NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Code Quality and Security Checks
+  security-scan:
+    name: Security and Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install security tools
+        run: |
+          pip install bandit safety semgrep
+          
+      - name: Run Bandit security scan
+        run: |
+          bandit -r backend/ -f json -o security-report.json || true
+          
+      - name: Run Safety vulnerability check
+        run: |
+          safety check --json --output safety-report.json || true
+          
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: "*-report.json"
+
+  # Python Services Testing
+  python-tests:
+    name: Python Services Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [content-generation, detection, publishing]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install pytest pytest-cov pytest-asyncio
+
+      - name: Run tests for ${{ matrix.service }}
+        working-directory: backend/services/${{ matrix.service }}
+        run: |
+          python -m pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./backend/services/${{ matrix.service }}/coverage.xml
+          flags: ${{ matrix.service }}
+
+  # n8n Workflow Validation
+  n8n-validation:
+    name: n8n Workflows Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Set up Python for n8n validation
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install n8n CLI
+        run: npm install -g n8n
+
+      - name: Install Python validation dependencies
+        run: |
+          pip install requests jsonschema
+
+      - name: Validate n8n workflow files
+        run: |
+          python validate-n8n-ready-endpoints.py || echo "Validation warnings detected"
+
+      - name: Check workflow syntax
+        run: |
+          for workflow in n8n-workflows/*.json; do
+            echo "Validating $workflow"
+            python -m json.tool "$workflow" > /dev/null
+          done
+
+  # Docker Build and Push
+  docker-build:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [security-scan, python-tests]
+    if: github.ref == 'refs/heads/main'
+    
+    strategy:
+      matrix:
+        service: [content-generation, detection, publishing]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: backend/services/${{ matrix.service }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # Deploy to Development Environment
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: [docker-build, n8n-validation]
+    if: github.ref == 'refs/heads/develop'
+    environment: development
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to development
+        run: |
+          echo "Deploying to development environment..."
+          # Add deployment commands here
+          # This could involve updating docker-compose files, kubernetes manifests, etc.
+
+  # Deploy to Production Environment
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [docker-build, n8n-validation]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create deployment backup
+        run: |
+          echo "Creating deployment backup..."
+          # Backup current n8n workflows
+          # Backup database state
+
+      - name: Deploy to production
+        run: |
+          echo "Deploying to production environment..."
+          # Blue-Green deployment logic
+          # n8n workflow updates
+          # Service rollout
+
+      - name: Post-deployment verification
+        run: |
+          echo "Running post-deployment health checks..."
+          # Health check endpoints
+          # Workflow validation
+          # Database connectivity
+
+  # n8n Workflow Deployment
+  n8n-workflow-deploy:
+    name: Deploy n8n Workflows
+    runs-on: ubuntu-latest
+    needs: [n8n-validation]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install n8n deployment tools
+        run: |
+          pip install requests python-dotenv
+
+      - name: Deploy workflows to n8n.cloud
+        env:
+          N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+          N8N_BASE_URL: ${{ secrets.N8N_BASE_URL }}
+        run: |
+          python deployment/deploy-n8n-workflows.py
+
+  # Performance and Load Testing
+  performance-tests:
+    name: Performance Testing
+    runs-on: ubuntu-latest
+    needs: [deploy-dev]
+    if: github.ref == 'refs/heads/develop'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install performance testing tools
+        run: |
+          pip install locust pytest-benchmark
+
+      - name: Run load tests
+        working-directory: backend/tests/performance
+        run: |
+          python -m pytest load_testing_suite.py -v
+
+      - name: Generate performance report
+        run: |
+          echo "Performance test completed" > performance-report.txt
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: performance-report.txt

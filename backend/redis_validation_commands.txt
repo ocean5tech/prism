@@ -1,0 +1,128 @@
+# ========================================
+# Redis缓存系统手工验证命令清单
+# 复制这些命令到WSL终端中执行
+# ========================================
+
+# 第1步: 基础连接测试
+echo "=== 第1步: 基础连接测试 ==="
+redis-cli -h localhost -p 6380 ping
+# 预期结果: PONG
+
+# 第2步: 实际数据存储测试 (Prism业务场景)
+echo "=== 第2步: 存储Prism业务数据 ==="
+
+# 连接到Redis
+redis-cli -h localhost -p 6380
+
+# 在redis-cli中执行以下命令:
+# 测试内容生成缓存
+SET prism:content:cache:tech_001 '{"title": "AI技术发展趋势", "content": "人工智能技术在2024年...", "quality_score": 0.89, "domain": "technology"}'
+
+# 测试用户会话缓存
+SET prism:session:user_12345 '{"user_id": "12345", "role": "content_manager", "last_activity": "2025-08-11T10:30:00Z", "active_domain": "finance"}'
+
+# 测试代理记忆系统
+HSET prism:agent:memory:content_gen successful_patterns 15 failed_patterns 3 avg_quality_score 0.87 last_optimization "2025-08-11T09:15:00Z"
+
+# 测试任务队列 (Celery)
+LPUSH prism:tasks:generation '{"task_id": "gen_001", "domain": "finance", "priority": "high", "source": "RSS feed analysis"}'
+LPUSH prism:tasks:generation '{"task_id": "gen_002", "domain": "sports", "priority": "medium", "source": "News aggregation"}'
+
+# 测试关键词集合
+SADD prism:keywords:finance "investment" "portfolio" "market" "trading" "risk" "analysis" "FINRA" "compliance"
+
+# 第3步: 数据检索验证
+echo "=== 第3步: 验证数据可以正确读取 ==="
+
+# 读取刚存储的数据
+GET prism:content:cache:tech_001
+# 预期: 返回JSON格式的内容数据
+
+GET prism:session:user_12345
+# 预期: 返回用户会话信息
+
+HGETALL prism:agent:memory:content_gen
+# 预期: 返回所有hash字段和值
+
+LLEN prism:tasks:generation
+# 预期: 返回 2 (任务队列长度)
+
+SMEMBERS prism:keywords:finance
+# 预期: 返回所有金融关键词
+
+# 第4步: 高级功能测试
+echo "=== 第4步: TTL和过期测试 ==="
+
+# 设置临时缓存数据 (60秒过期)
+SET prism:cache:temp_session "临时会话数据_测试" EX 60
+
+# 检查TTL
+TTL prism:cache:temp_session
+# 预期: 显示约60秒倒计时
+
+# 第5步: 数据库分离测试
+echo "=== 第5步: 数据库分离验证 ==="
+
+# 切换到数据库 0 (生产)
+SELECT 0
+SET prism:prod:data "生产环境数据"
+
+# 切换到数据库 15 (测试)
+SELECT 15
+SET prism:test:data "测试环境数据"
+
+# 验证分离
+SELECT 0
+GET prism:test:data
+# 预期: (nil) - 在生产库中不应存在
+
+SELECT 15
+GET prism:prod:data
+# 预期: (nil) - 在测试库中不应存在
+
+GET prism:test:data
+# 预期: "测试环境数据"
+
+# 第6步: 性能测试
+echo "=== 第6步: 性能验证 ==="
+
+# 批量写入测试
+SELECT 0
+eval "for i=1,100 do redis.call('SET', 'perf:test:'..i, 'test_value_'..i) end" 0
+
+# 验证写入数量
+KEYS "perf:test:*" | wc -l
+# 预期: 100
+
+# 第7步: 系统信息检查
+echo "=== 第7步: 系统状态检查 ==="
+
+# 内存使用情况
+INFO memory
+
+# 数据库统计
+INFO keyspace
+
+# 连接信息
+INFO clients
+
+# 第8步: 清理测试数据
+echo "=== 第8步: 清理测试数据 ==="
+
+DEL prism:content:cache:tech_001
+DEL prism:session:user_12345
+DEL prism:agent:memory:content_gen
+DEL prism:tasks:generation
+DEL prism:keywords:finance
+DEL prism:cache:temp_session
+eval "return redis.call('DEL', unpack(redis.call('KEYS', 'perf:test:*')))" 0
+
+# 退出redis-cli
+EXIT
+
+# 第9步: 容器内部验证
+echo "=== 第9步: 容器内部状态验证 ==="
+podman exec prism-redis redis-cli info server | grep -E "(redis_version|uptime|tcp_port)"
+
+echo "=== ✅ Redis验证完成! ==="
+echo "如果所有命令都返回预期结果，Redis缓存系统工作正常"

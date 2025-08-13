@@ -1,0 +1,52 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "rules/*.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Python services
+  - job_name: 'content-generation'
+    static_configs:
+      - targets: ['content-generation:8000']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: 'detection'  
+    static_configs:
+      - targets: ['detection:8000']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  - job_name: 'publishing'
+    static_configs:
+      - targets: ['publishing:8000']  
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Infrastructure services
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    scrape_interval: 60s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+    scrape_interval: 60s
+
+  # Node exporter for system metrics
+  - job_name: 'node'
+    static_configs:
+      - targets: ['localhost:9100']

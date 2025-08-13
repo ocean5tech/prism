@@ -1,0 +1,80 @@
+{
+  "name": "Code-Based Content Test",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "code-content-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [120, 300],
+      "webhookId": "code-content-test"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Use Code node to make HTTP request with proper JSON\nconst items = $input.all();\n\n// Prepare the request payload\nconst payload = {\n  content_id: `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n  domain: 'finance',\n  prompt: 'Write a comprehensive analysis of current market trends and their implications for investors.',\n  style_parameters: {\n    tone: 'professional',\n    complexity: 'intermediate',\n    structure: 'analysis',\n    length: 'medium',\n    perspective: 'third-person'\n  },\n  source_metadata: {\n    title: 'Market Trends Analysis Test',\n    description: 'Testing content generation with comprehensive market data',\n    url: 'https://example.com/market-trends',\n    pub_date: new Date().toISOString()\n  }\n};\n\nconsole.log('Preparing to call content generation API with payload:', JSON.stringify(payload, null, 2));\n\n// Make HTTP request using fetch\ntry {\n  const response = await fetch('http://localhost:8010/api/v1/content/generate', {\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'X-Request-ID': payload.content_id\n    },\n    body: JSON.stringify(payload)\n  });\n  \n  console.log(`API Response Status: ${response.status}`);\n  \n  if (response.ok) {\n    const result = await response.json();\n    console.log('Content generation successful:', result.content_id);\n    \n    return [{\n      json: {\n        success: true,\n        api_response: result,\n        request_payload: payload,\n        status: response.status,\n        timestamp: new Date().toISOString()\n      }\n    }];\n  } else {\n    const errorText = await response.text();\n    console.error(`API Error ${response.status}:`, errorText);\n    \n    return [{\n      json: {\n        success: false,\n        error: `HTTP ${response.status}`,\n        error_details: errorText,\n        request_payload: payload,\n        timestamp: new Date().toISOString()\n      }\n    }];\n  }\n} catch (error) {\n  console.error('Request failed:', error.message);\n  \n  return [{\n    json: {\n      success: false,\n      error: 'Request failed',\n      error_details: error.message,\n      request_payload: payload,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}"
+      },
+      "id": "content-api-caller",
+      "name": "Content API Caller",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [340, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [560, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Content API Caller",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content API Caller": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-13T08:30:00.000Z",
+      "updatedAt": "2025-08-13T08:30:00.000Z",
+      "id": "code-content-test",
+      "name": "code-content-test"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-13T08:30:00.000Z",
+  "versionId": "v1.0.0-code"
+}

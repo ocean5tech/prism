@@ -1,0 +1,96 @@
+{
+  "name": "AI Content Generation Pipeline - Cloud",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "intervalSize": 30
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "feedUrl": "https://feeds.bloomberg.com/markets/news.rss"
+      },
+      "id": "rss-bloomberg",
+      "name": "RSS Bloomberg",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [300, 200]
+    },
+    {
+      "parameters": {
+        "feedUrl": "https://rss.cnn.com/rss/edition.rss"
+      },
+      "id": "rss-cnn-tech",
+      "name": "RSS CNN Tech",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [300, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Domain Classification and Content Processing\nconst items = $input.all();\nconst processedItems = [];\n\n// Domain classification keywords\nconst domainKeywords = {\n  finance: ['stock', 'market', 'trading', 'economy', 'financial', 'investment', 'crypto', 'currency', 'fund', 'bond', 'earnings', 'bloomberg'],\n  sports: ['game', 'match', 'player', 'team', 'score', 'season', 'championship', 'tournament', 'league', 'coach', 'espn'],\n  technology: ['technology', 'software', 'ai', 'startup', 'app', 'digital', 'innovation', 'coding', 'tech', 'data', 'apple', 'google']\n};\n\n// Style parameter variations\nconst styleTemplates = {\n  finance: {\n    tones: ['professional', 'analytical', 'authoritative'],\n    structures: ['analysis', 'news', 'market-update'],\n    lengths: ['medium', 'long'],\n    perspectives: ['third-person', 'expert-analysis']\n  },\n  sports: {\n    tones: ['engaging', 'conversational', 'enthusiastic'],\n    structures: ['news', 'analysis', 'recap'],\n    lengths: ['short', 'medium'],\n    perspectives: ['third-person', 'fan-perspective']\n  },\n  technology: {\n    tones: ['analytical', 'engaging', 'authoritative'],\n    structures: ['tutorial', 'analysis', 'news'],\n    lengths: ['medium', 'long'],\n    perspectives: ['expert-analysis', 'third-person']\n  },\n  general: {\n    tones: ['conversational', 'professional'],\n    structures: ['news', 'analysis'],\n    lengths: ['short', 'medium'],\n    perspectives: ['third-person']\n  }\n};\n\nfor (const item of items) {\n  const title = item.json.title || '';\n  const description = item.json.description || item.json.contentSnippet || '';\n  const content = (title + ' ' + description).toLowerCase();\n  \n  // Classify domain\n  let domain = 'general';\n  for (const [domainName, keywords] of Object.entries(domainKeywords)) {\n    if (keywords.some(keyword => content.includes(keyword))) {\n      domain = domainName;\n      break;\n    }\n  }\n  \n  // Generate random style parameters\n  const styleConfig = styleTemplates[domain];\n  const randomStyle = {\n    tone: styleConfig.tones[Math.floor(Math.random() * styleConfig.tones.length)],\n    structure: styleConfig.structures[Math.floor(Math.random() * styleConfig.structures.length)],\n    length: styleConfig.lengths[Math.floor(Math.random() * styleConfig.lengths.length)],\n    perspective: styleConfig.perspectives[Math.floor(Math.random() * styleConfig.perspectives.length)],\n    seed: Math.random().toString(36).substr(2, 9)\n  };\n  \n  // Generate content ID\n  const contentId = `ai_${domain}_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;\n  \n  console.log(`Processing: ${title} - Domain: ${domain}`);\n  \n  processedItems.push({\n    json: {\n      content_id: contentId,\n      domain: domain,\n      source_title: title,\n      source_description: description,\n      source_url: item.json.link,\n      pub_date: item.json.pubDate || item.json.isoDate,\n      style_parameters: randomStyle,\n      processing_timestamp: new Date().toISOString()\n    }\n  });\n}\n\nconsole.log(`Processed ${processedItems.length} items for AI generation`);\nreturn processedItems;"
+      },
+      "id": "content-processor",
+      "name": "Content Processor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Advanced Prompt Engineering for Claude\nconst item = $input.first();\nconst data = item.json;\n\n// Domain-specific prompt templates\nconst promptTemplates = {\n  finance: `You are a professional financial analyst writing for investors and finance professionals.\n\nSource Material:\nTitle: {{source_title}}\nDescription: {{source_description}}\n\nInstructions:\n- Write a {{length}} {{structure}} article with a {{tone}} tone\n- Use {{perspective}} perspective\n- Target professional finance audience\n- Include market analysis and investment implications\n- Maintain objectivity and cite the source material\n- Word count: {{target_words}} words\n- Focus on actionable insights for investors\n\nWrite the complete article now:`,\n\n  sports: `You are a sports journalist writing engaging content for sports fans.\n\nSource Material:\nTitle: {{source_title}}\nDescription: {{source_description}}\n\nInstructions:\n- Write a {{length}} {{structure}} article with a {{tone}} tone\n- Use {{perspective}} perspective\n- Target sports enthusiasts\n- Include relevant statistics and player/team context\n- Build excitement and narrative engagement\n- Word count: {{target_words}} words\n- Make it engaging for sports fans\n\nWrite the complete article now:`,\n\n  technology: `You are a technology expert writing for a tech-savvy audience.\n\nSource Material:\nTitle: {{source_title}}\nDescription: {{source_description}}\n\nInstructions:\n- Write a {{length}} {{structure}} article with a {{tone}} tone\n- Use {{perspective}} perspective\n- Target technology professionals and enthusiasts\n- Explain technical concepts clearly\n- Include industry implications and future trends\n- Word count: {{target_words}} words\n- Balance technical depth with accessibility\n\nWrite the complete article now:`,\n\n  general: `You are a professional content writer creating high-quality articles.\n\nSource Material:\nTitle: {{source_title}}\nDescription: {{source_description}}\n\nInstructions:\n- Write a {{length}} {{structure}} article with a {{tone}} tone\n- Use {{perspective}} perspective\n- Target general audience\n- Provide valuable insights and analysis\n- Maintain professional writing standards\n- Word count: {{target_words}} words\n- Ensure content is engaging and informative\n\nWrite the complete article now:`\n};\n\n// Word count mapping\nconst wordCounts = {\n  short: 400,\n  medium: 800,\n  long: 1200\n};\n\n// Get template and replace placeholders\nconst template = promptTemplates[data.domain] || promptTemplates.general;\nconst targetWords = wordCounts[data.style_parameters.length] || 800;\n\nconst finalPrompt = template\n  .replace(/{{source_title}}/g, data.source_title)\n  .replace(/{{source_description}}/g, data.source_description)\n  .replace(/{{length}}/g, data.style_parameters.length)\n  .replace(/{{structure}}/g, data.style_parameters.structure)\n  .replace(/{{tone}}/g, data.style_parameters.tone)\n  .replace(/{{perspective}}/g, data.style_parameters.perspective)\n  .replace(/{{target_words}}/g, targetWords);\n\nconsole.log(`Generated prompt for ${data.content_id} - Domain: ${data.domain}`);\n\nreturn [{\n  json: {\n    ...data,\n    ai_prompt: finalPrompt,\n    target_word_count: targetWords,\n    prompt_version: '2.0'\n  }\n}];"
+      },
+      "id": "prompt-engineer",
+      "name": "Prompt Engineer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 300]
+    },
+    {
+      "parameters": {
+        "model": "claude-3-5-sonnet-20241022",
+        "messages": {
+          "values": [
+            {
+              "message": "={{$json.ai_prompt}}"
+            }
+          ]
+        }
+      },
+      "id": "claude-ai",
+      "name": "Claude AI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1,
+      "position": [960, 300],
+      "credentials": {
+        "anthropicApi": {
+          "id": "ANTHROPIC_CREDENTIALS_ID",
+          "name": "Anthropic Claude API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Content Quality Analysis and Formatting\nconst items = $input.all();\nconst processedItems = [];\n\nfor (const item of items) {\n  const generatedContent = item.json.response || item.json.content || item.json.text || 'Content generation failed';\n  const originalData = $('Prompt Engineer').first().json;\n  \n  // Simple quality metrics\n  const wordCount = generatedContent.split(/\\s+/).length;\n  const targetCount = originalData.target_word_count || 800;\n  const lengthScore = Math.max(0, 100 - Math.abs(wordCount - targetCount) / targetCount * 100);\n  \n  // Basic content quality checks\n  const hasTitle = generatedContent.toLowerCase().includes(originalData.source_title.toLowerCase().split(' ')[0]);\n  const hasSubstantiveContent = wordCount > 200;\n  const hasStructure = generatedContent.includes('\\n') || generatedContent.length > 500;\n  \n  const qualityScore = Math.round((lengthScore + (hasTitle ? 20 : 0) + (hasSubstantiveContent ? 30 : 0) + (hasStructure ? 10 : 0)) / 1.6);\n  \n  console.log(`Quality analysis for ${originalData.content_id}: ${qualityScore}/100 (${wordCount} words)`);\n  \n  processedItems.push({\n    json: {\n      ...originalData,\n      generated_content: generatedContent,\n      word_count: wordCount,\n      quality_score: qualityScore,\n      quality_metrics: {\n        length_score: Math.round(lengthScore),\n        has_title_reference: hasTitle,\n        has_substantive_content: hasSubstantiveContent,\n        has_structure: hasStructure\n      },\n      generation_timestamp: new Date().toISOString(),\n      status: qualityScore >= 70 ? 'approved' : 'needs_review'\n    }\n  });\n}\n\nreturn processedItems;"
+      },
+      "id": "quality-analyzer",
+      "name": "Quality Analyzer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1180, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {\n            \"caseSensitive\": true,\n            \"leftValue\": \"\",\n            \"typeValidation\": \"strict\"\n          },\n          \"conditions\": [\n            {\n              \"leftValue\": \"={{$json.quality_score}}\",\n              \"rightValue\": 70,\n              \"operator\": {\n                \"type\": \"number\",\n                \"operation\": \"gte\"\n              }\n            }\n          ],\n          \"combinator\": \"and\"\n        }\n      },\n      \"id\": \"quality-gate\",\n      \"name\": \"Quality Gate\",\n      \"type\": \"n8n-nodes-base.if\",\n      \"typeVersion\": 2,\n      \"position\": [\n        1400,\n        300\n      ]\n    },\n    {\n      \"parameters\": {\n        \"jsCode\": \"// Platform-specific content formatting\\nconst item = $input.first();\\nconst data = item.json;\\n\\n// Format for different platforms\\nconst platformFormats = {\\n  twitter: {\\n    max_length: 280,\\n    format: 'social_post',\\n    hashtags: true\\n  },\\n  linkedin: {\\n    max_length: 3000,\\n    format: 'professional_post',\\n    hashtags: true\\n  },\\n  medium: {\\n    max_length: 20000,\\n    format: 'article',\\n    hashtags: false\\n  },\\n  wordpress: {\\n    max_length: 50000,\\n    format: 'blog_post',\\n    hashtags: false\\n  }\\n};\\n\\n// Generate hashtags based on domain\\nconst hashtagMap = {\\n  finance: ['#Finance', '#Investment', '#Markets', '#Economy'],\\n  sports: ['#Sports', '#Athletics', '#Competition', '#GameDay'],\\n  technology: ['#Tech', '#Innovation', '#Digital', '#TechNews'],\\n  general: ['#News', '#Update', '#Information']\\n};\\n\\nconst platformContent = {};\\nconst domainHashtags = hashtagMap[data.domain] || hashtagMap.general;\\n\\n// Create platform-specific versions\\nfor (const [platform, config] of Object.entries(platformFormats)) {\\n  let content = data.generated_content;\\n  \\n  // Truncate if needed\\n  if (content.length > config.max_length) {\\n    content = content.substring(0, config.max_length - 100) + '...';\\n  }\\n  \\n  // Add hashtags if supported\\n  if (config.hashtags) {\\n    const selectedHashtags = domainHashtags.slice(0, 3).join(' ');\\n    content += '\\\\n\\\\n' + selectedHashtags;\\n  }\\n  \\n  platformContent[platform] = {\\n    content: content,\\n    format: config.format,\\n    estimated_length: content.length\\n  };\\n}\\n\\nconsole.log(`Formatted content for ${Object.keys(platformContent).length} platforms`);\\n\\nreturn [{\\n  json: {\\n    ...data,\\n    platform_content: platformContent,\\n    ready_for_publishing: true,\\n    formatting_timestamp: new Date().toISOString()\\n  }\\n}];\"\n      },\n      \"id\": \"platform-formatter\",\n      \"name\": \"Platform Formatter\",\n      \"type\": \"n8n-nodes-base.code\",\n      \"typeVersion\": 2,\n      \"position\": [\n        1620,\n        240\n      ]\n    },\n    {\n      \"parameters\": {\n        \"jsCode\": \"// Content improvement suggestions\\nconst item = $input.first();\\nconst data = item.json;\\n\\n// Generate improvement suggestions\\nconst suggestions = [];\\nconst metrics = data.quality_metrics;\\n\\nif (!metrics.has_title_reference) {\\n  suggestions.push('Include more specific references to the source material');\\n}\\n\\nif (!metrics.has_substantive_content) {\\n  suggestions.push('Add more detailed analysis and insights');\\n}\\n\\nif (data.word_count < data.target_word_count * 0.7) {\\n  suggestions.push('Expand content to meet target word count');\\n}\\n\\nif (data.word_count > data.target_word_count * 1.3) {\\n  suggestions.push('Condense content to meet target word count');\\n}\\n\\nconst improvementNote = {\\n  content_id: data.content_id,\\n  quality_score: data.quality_score,\\n  suggestions: suggestions,\\n  needs_human_review: true,\\n  review_priority: data.quality_score < 50 ? 'high' : 'medium'\\n};\\n\\nconsole.log(`Content ${data.content_id} needs improvement: ${suggestions.length} suggestions`);\\n\\nreturn [{\\n  json: {\\n    ...data,\\n    improvement_suggestions: improvementNote,\\n    workflow_status: 'needs_improvement'\\n  }\\n}];\"\n      },\n      \"id\": \"improvement-suggestions\",\n      \"name\": \"Improvement Suggestions\",\n      \"type\": \"n8n-nodes-base.code\",\n      \"typeVersion\": 2,\n      \"position\": [\n        1620,\n        360\n      ]\n    }\n  ],\n  \"connections\": {\n    \"Schedule Trigger\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"RSS Bloomberg\",\n            \"type\": \"main\",\n            \"index\": 0\n          },\n          {\n            \"node\": \"RSS CNN Tech\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"RSS Bloomberg\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Content Processor\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"RSS CNN Tech\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Content Processor\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Content Processor\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Prompt Engineer\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Prompt Engineer\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Claude AI\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Claude AI\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Quality Analyzer\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Quality Analyzer\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Quality Gate\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    },\n    \"Quality Gate\": {\n      \"main\": [\n        [\n          {\n            \"node\": \"Platform Formatter\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ],\n        [\n          {\n            \"node\": \"Improvement Suggestions\",\n            \"type\": \"main\",\n            \"index\": 0\n          }\n        ]\n      ]\n    }\n  },\n  \"pinData\": {},\n  \"settings\": {\n    \"executionOrder\": \"v1\"\n  },\n  \"staticData\": null,\n  \"tags\": [\n    {\n      \"createdAt\": \"2025-08-13T09:00:00.000Z\",\n      \"updatedAt\": \"2025-08-13T09:00:00.000Z\",\n      \"id\": \"ai-content-pipeline\",\n      \"name\": \"AI Content Pipeline\"\n    }\n  ],\n  \"triggerCount\": 0,\n  \"updatedAt\": \"2025-08-13T09:00:00.000Z\",\n  \"versionId\": \"v1.0.0-ai-cloud\"\n}

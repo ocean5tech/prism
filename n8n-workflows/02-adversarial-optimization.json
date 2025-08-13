@@ -1,0 +1,483 @@
+{
+  "name": "Adversarial Optimization Loop",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "adversarial-trigger",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Adversarial Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [240, 300],
+      "id": "adversarial-trigger",
+      "webhookId": "adversarial-optimization",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://detection-service:8000/api/v1/patterns/analyze",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content_batch",
+              "value": "={{ $json.recent_content }}"
+            },
+            {
+              "name": "domain",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "time_range",
+              "value": "24h"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxRetries": 3,
+            "waitBetweenTries": 5000
+          }
+        }
+      },
+      "name": "Pattern Detection",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [460, 300],
+      "id": "pattern-detect",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.pattern_similarity }}",
+              "operation": "larger",
+              "value2": 0.75
+            }
+          ]
+        }
+      },
+      "name": "Pattern Threshold Check",
+      "type": "n8n-nodes-base.if",
+      "position": [680, 300],
+      "id": "pattern-threshold",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://content-generation-service:8000/api/v1/style/generate-variations",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "detected_patterns",
+              "value": "={{ $json.detected_patterns }}"
+            },
+            {
+              "name": "domain",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "variation_count",
+              "value": 5
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "enabled": true,
+            "maxRetries": 2,
+            "waitBetweenTries": 3000
+          }
+        }
+      },
+      "name": "Generate Style Variations",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [900, 200],
+      "id": "generate-variations",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "multiplex",
+        "batchSize": 1
+      },
+      "name": "Split Variations",
+      "type": "n8n-nodes-base.itemLists",
+      "position": [1120, 200],
+      "id": "split-variations",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://content-generation-service:8000/api/v1/content/test-generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "style_variation",
+              "value": "={{ $json.style_params }}"
+            },
+            {
+              "name": "domain",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "test_content",
+              "value": "={{ $json.sample_source }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "name": "Test Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1340, 200],
+      "id": "test-generate",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://detection-service:8000/api/v1/quality/score-variation",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "generated_content",
+              "value": "={{ $json.test_content }}"
+            },
+            {
+              "name": "style_params",
+              "value": "={{ $json.style_params }}"
+            },
+            {
+              "name": "previous_content",
+              "value": "={{ $json.comparison_baseline }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "name": "Score Variation",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1560, 200],
+      "id": "score-variation",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "const variations = $input.all();\nconst bestVariation = variations.reduce((best, current) => {\n  return current.json.quality_score > best.json.quality_score ? current : best;\n});\n\nreturn [{\n  json: {\n    best_variation: bestVariation.json.style_params,\n    improvement_score: bestVariation.json.quality_score,\n    domain: bestVariation.json.domain,\n    optimization_timestamp: new Date().toISOString(),\n    all_scores: variations.map(v => ({\n      style: v.json.style_params,\n      score: v.json.quality_score\n    }))\n  }\n}];"
+      },
+      "name": "Select Best Variation",
+      "type": "n8n-nodes-base.function",
+      "position": [1780, 200],
+      "id": "select-best",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://configuration-service:8000/api/v1/domains/update-style-config",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "domain",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "new_style_config",
+              "value": "={{ $json.best_variation }}"
+            },
+            {
+              "name": "improvement_score",
+              "value": "={{ $json.improvement_score }}"
+            },
+            {
+              "name": "optimization_metadata",
+              "value": "={{ $json.all_scores }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "name": "Update Style Configuration",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [2000, 200],
+      "id": "update-config",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://analytics-service:8000/api/v1/metrics/adversarial-optimization",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "domain",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "optimization_cycle",
+              "value": "={{ $json.optimization_timestamp }}"
+            },
+            {
+              "name": "improvement_achieved",
+              "value": "={{ $json.improvement_score }}"
+            },
+            {
+              "name": "patterns_detected",
+              "value": "={{ $json.pattern_count }}"
+            }
+          ]
+        }
+      },
+      "name": "Record Optimization Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [2220, 200],
+      "id": "record-optimization",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"optimization_complete\", \"domain\": $json.domain, \"improvement\": $json.improvement_score, \"timestamp\": $json.optimization_timestamp } }}"
+      },
+      "name": "Optimization Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [2440, 200],
+      "id": "optimization-response",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "respondWith": "json", 
+        "responseBody": "={{ { \"status\": \"no_optimization_needed\", \"domain\": $json.domain, \"pattern_similarity\": $json.pattern_similarity, \"threshold\": 0.75 } }}"
+      },
+      "name": "No Optimization Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [900, 400],
+      "id": "no-optimization-response",
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Adversarial Webhook": {
+      "main": [
+        [
+          {
+            "node": "Pattern Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pattern Detection": {
+      "main": [
+        [
+          {
+            "node": "Pattern Threshold Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pattern Threshold Check": {
+      "main": [
+        [
+          {
+            "node": "Generate Style Variations",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Optimization Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Style Variations": {
+      "main": [
+        [
+          {
+            "node": "Split Variations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Variations": {
+      "main": [
+        [
+          {
+            "node": "Test Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Generation": {
+      "main": [
+        [
+          {
+            "node": "Score Variation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Variation": {
+      "main": [
+        [
+          {
+            "node": "Select Best Variation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Select Best Variation": {
+      "main": [
+        [
+          {
+            "node": "Update Style Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Style Configuration": {
+      "main": [
+        [
+          {
+            "node": "Record Optimization Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Optimization Metrics": {
+      "main": [
+        [
+          {
+            "node": "Optimization Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionTimeout": 600,
+    "maxExecutionTimeout": 900,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": {},
+  "tags": ["adversarial-optimization", "ai-improvement"],
+  "triggerCount": 1,
+  "updatedAt": "2025-08-08T10:00:00.000Z",
+  "versionId": "1.0.0"
+}

@@ -1,0 +1,114 @@
+{
+  "name": "RSS Test - Simple",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rss-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        120,
+        300
+      ],
+      "webhookId": "rss-test"
+    },
+    {
+      "parameters": {
+        "feedUrl": "https://feeds.bloomberg.com/markets/news.rss",
+        "options": {}
+      },
+      "id": "rss-monitor-reuters",
+      "name": "RSS Monitor - Bloomberg",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simple RSS data inspector\nconst items = $input.all();\n\nconsole.log(`=== RSS Feed Analysis ===`);\nconsole.log(`Total items received: ${items.length}`);\n\nconst analysis = [];\n\nfor (let i = 0; i < Math.min(items.length, 3); i++) {\n  const item = items[i];\n  console.log(`\\n--- Item ${i+1} ---`);\n  console.log(`Title: ${item.json.title}`);\n  console.log(`Description: ${item.json.description || item.json.contentSnippet || 'No description'}`);\n  console.log(`Link: ${item.json.link}`);\n  console.log(`PubDate: ${item.json.pubDate || item.json.isoDate}`);\n  console.log(`Available keys: ${Object.keys(item.json).join(', ')}`);\n  \n  analysis.push({\n    json: {\n      item_number: i + 1,\n      title: item.json.title,\n      description: item.json.description || item.json.contentSnippet || 'No description',\n      link: item.json.link,\n      pubDate: item.json.pubDate || item.json.isoDate,\n      available_keys: Object.keys(item.json),\n      raw_data_sample: JSON.stringify(item.json).substring(0, 500) + '...'\n    }\n  });\n}\n\nconsole.log(`\\n=== Analysis Complete ===`);\nreturn analysis;"
+      },
+      "id": "data-inspector",
+      "name": "RSS Data Inspector",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        780,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Monitor - Bloomberg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Monitor - Bloomberg": {
+      "main": [
+        [
+          {
+            "node": "RSS Data Inspector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Data Inspector": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-12T10:00:00.000Z",
+      "updatedAt": "2025-08-12T10:00:00.000Z",
+      "id": "rss-test",
+      "name": "rss-test"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-12T10:00:00.000Z",
+  "versionId": "v1.0.0-test"
+}

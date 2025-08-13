@@ -1,0 +1,539 @@
+{
+  "name": "Global Error Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST", 
+        "path": "error-handler",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "name": "Error Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "position": [240, 300],
+      "id": "error-webhook",
+      "webhookId": "global-error-handler",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "// Parse and categorize error\nconst errorData = $json;\nconst errorType = this.categorizeError(errorData);\nconst severity = this.determineSeverity(errorData);\nconst retryable = this.isRetryable(errorData);\n\nreturn [{\n  json: {\n    ...errorData,\n    error_category: errorType,\n    severity_level: severity,\n    is_retryable: retryable,\n    error_timestamp: new Date().toISOString(),\n    correlation_id: `err-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`\n  }\n}];\n\n// Helper functions\nfunction categorizeError(error) {\n  if (error.statusCode >= 500) return 'service_error';\n  if (error.statusCode === 429) return 'rate_limit';\n  if (error.statusCode >= 400 && error.statusCode < 500) return 'client_error';\n  if (error.message?.includes('timeout')) return 'timeout';\n  if (error.message?.includes('network')) return 'network';\n  return 'unknown';\n}\n\nfunction determineSeverity(error) {\n  if (error.statusCode >= 500) return 'high';\n  if (error.statusCode === 429) return 'medium';\n  if (error.message?.includes('timeout')) return 'medium';\n  return 'low';\n}\n\nfunction isRetryable(error) {\n  const retryableCodes = [408, 429, 500, 502, 503, 504];\n  const retryableMessages = ['timeout', 'network', 'connection'];\n  \n  if (retryableCodes.includes(error.statusCode)) return true;\n  if (retryableMessages.some(msg => error.message?.toLowerCase().includes(msg))) return true;\n  return false;\n}"
+      },
+      "name": "Categorize Error",
+      "type": "n8n-nodes-base.function",
+      "position": [460, 300],
+      "id": "categorize-error",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.severity_level }}",
+              "operation": "equal",
+              "value2": "high"
+            }
+          ]
+        }
+      },
+      "name": "High Severity Check",
+      "type": "n8n-nodes-base.if",
+      "position": [680, 300],
+      "id": "high-severity-check",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://analytics-service:8000/api/v1/alerts/critical",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "alert_type",
+              "value": "critical_error"
+            },
+            {
+              "name": "error_details",
+              "value": "={{ $json }}"
+            },
+            {
+              "name": "workflow_affected",
+              "value": "={{ $json.workflow_name }}"
+            },
+            {
+              "name": "service_affected", 
+              "value": "={{ $json.service_name }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "name": "Send Critical Alert",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [900, 200],
+      "id": "send-critical-alert",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.is_retryable }}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Retryable Check",
+      "type": "n8n-nodes-base.if",
+      "position": [900, 400],
+      "id": "retryable-check",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "functionCode": "// Implement exponential backoff retry logic\nconst retryCount = $json.retry_count || 0;\nconst maxRetries = 3;\nconst baseDelay = 2000; // 2 seconds\n\nif (retryCount >= maxRetries) {\n  return [{\n    json: {\n      ...$json,\n      retry_decision: 'max_retries_exceeded',\n      final_failure: true,\n      next_action: 'dead_letter_queue'\n    }\n  }];\n}\n\nconst delayMs = baseDelay * Math.pow(2, retryCount);\nconst jitter = Math.random() * 1000; // Add jitter to prevent thundering herd\nconst finalDelay = delayMs + jitter;\n\nreturn [{\n  json: {\n    ...$json,\n    retry_decision: 'retry_approved',\n    retry_count: retryCount + 1,\n    retry_delay_ms: finalDelay,\n    retry_at: new Date(Date.now() + finalDelay).toISOString(),\n    next_action: 'schedule_retry'\n  }\n}];"
+      },
+      "name": "Calculate Retry Strategy",
+      "type": "n8n-nodes-base.function",
+      "position": [1120, 300],
+      "id": "calculate-retry",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.retry_decision }}",
+              "operation": "equal",
+              "value2": "retry_approved"
+            }
+          ]
+        }
+      },
+      "name": "Retry Decision Gate",
+      "type": "n8n-nodes-base.if",
+      "position": [1340, 300],
+      "id": "retry-decision-gate",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "amount": "={{ $json.retry_delay_ms }}",
+        "unit": "ms"
+      },
+      "name": "Wait for Retry",
+      "type": "n8n-nodes-base.wait",
+      "position": [1560, 200],
+      "id": "wait-for-retry",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.original_request_url }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type", 
+              "value": "application/json"
+            },
+            {
+              "name": "X-Retry-Count",
+              "value": "={{ $json.retry_count }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": "={{ $json.original_request_body }}",
+        "options": {
+          "timeout": "={{ $json.original_timeout || 30000 }}",
+          "retry": {
+            "enabled": false
+          }
+        }
+      },
+      "name": "Retry Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1780, 200],
+      "id": "retry-request",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.statusCode || 200 }}",
+              "operation": "smaller",
+              "value2": 400
+            }
+          ]
+        }
+      },
+      "name": "Retry Success Check",
+      "type": "n8n-nodes-base.if", 
+      "position": [2000, 200],
+      "id": "retry-success-check",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://analytics-service:8000/api/v1/recovery/success",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "correlation_id",
+              "value": "={{ $json.correlation_id }}"
+            },
+            {
+              "name": "recovery_method",
+              "value": "automatic_retry"
+            },
+            {
+              "name": "retry_count",
+              "value": "={{ $json.retry_count }}"
+            },
+            {
+              "name": "total_recovery_time",
+              "value": "={{ $json.total_recovery_time }}"
+            }
+          ]
+        }
+      },
+      "name": "Log Recovery Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [2220, 100],
+      "id": "log-recovery-success",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "workflowId": "global-error-handler", 
+        "waitForSubWorkflow": false,
+        "passData": true
+      },
+      "name": "Recursive Retry",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "position": [2220, 300],
+      "id": "recursive-retry",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://analytics-service:8000/api/v1/dead-letter-queue",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "failed_request",
+              "value": "={{ $json }}"
+            },
+            {
+              "name": "failure_reason",
+              "value": "max_retries_exceeded"
+            },
+            {
+              "name": "requires_manual_intervention",
+              "value": true
+            }
+          ]
+        }
+      },
+      "name": "Dead Letter Queue",
+      "type": "n8n-nodes-base.httpRequest", 
+      "position": [1560, 400],
+      "id": "dead-letter-queue",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://analytics-service:8000/api/v1/metrics/error-handled",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "error_category",
+              "value": "={{ $json.error_category }}"
+            },
+            {
+              "name": "severity_level",
+              "value": "={{ $json.severity_level }}"
+            },
+            {
+              "name": "resolution_method",
+              "value": "={{ $json.next_action }}"
+            },
+            {
+              "name": "processing_time",
+              "value": "={{ $json.processing_duration }}"
+            }
+          ]
+        }
+      },
+      "name": "Record Error Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1780, 500],
+      "id": "record-error-metrics",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"error_handled\", \"correlation_id\": $json.correlation_id, \"action_taken\": $json.next_action, \"retry_scheduled\": $json.retry_decision === 'retry_approved' } }}"
+      },
+      "name": "Error Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "position": [2000, 500],
+      "id": "error-response",
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "Error Webhook": {
+      "main": [
+        [
+          {
+            "node": "Categorize Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Categorize Error": {
+      "main": [
+        [
+          {
+            "node": "High Severity Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "High Severity Check": {
+      "main": [
+        [
+          {
+            "node": "Send Critical Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Retryable Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Critical Alert": {
+      "main": [
+        [
+          {
+            "node": "Retryable Check",
+            "type": "main", 
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retryable Check": {
+      "main": [
+        [
+          {
+            "node": "Calculate Retry Strategy",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Dead Letter Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Retry Strategy": {
+      "main": [
+        [
+          {
+            "node": "Retry Decision Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Decision Gate": {
+      "main": [
+        [
+          {
+            "node": "Wait for Retry",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Dead Letter Queue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Retry": {
+      "main": [
+        [
+          {
+            "node": "Retry Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Request": {
+      "main": [
+        [
+          {
+            "node": "Retry Success Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry Success Check": {
+      "main": [
+        [
+          {
+            "node": "Log Recovery Success", 
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Recursive Retry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dead Letter Queue": {
+      "main": [
+        [
+          {
+            "node": "Record Error Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Error Metrics": {
+      "main": [
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Recovery Success": {
+      "main": [
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionTimeout": 300,
+    "maxExecutionTimeout": 600,
+    "saveManualExecutions": true,
+    "callerPolicy": "any"
+  },
+  "staticData": {},
+  "tags": ["error-handling", "recovery", "monitoring"],
+  "triggerCount": 1,
+  "updatedAt": "2025-08-08T10:00:00.000Z",
+  "versionId": "1.0.0"
+}

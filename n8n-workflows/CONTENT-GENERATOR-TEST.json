@@ -1,0 +1,129 @@
+{
+  "name": "Content Generator Test",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "content-gen-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [120, 300],
+      "webhookId": "content-gen-test"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate test data for content generation API\nconst testData = {\n  content_id: `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n  domain: 'finance',\n  generation_prompt: 'Write a short article about market trends',\n  style_parameters: {\n    tone: 'professional',\n    complexity: 'intermediate',\n    structure: 'analysis',\n    length: 'medium',\n    perspective: 'third-person'\n  },\n  source_title: 'Test Market Analysis',\n  source_description: 'Testing content generation with market data',\n  source_url: 'https://example.com/test',\n  pub_date: new Date().toISOString()\n};\n\nconsole.log('Generated test data:', JSON.stringify(testData, null, 2));\n\nreturn [{ json: testData }];"
+      },
+      "id": "test-data-generator",
+      "name": "Test Data Generator", 
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8010/api/v1/content/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Request-ID",
+              "value": "={{$json[\"content_id\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={{ {\n  \"content_id\": $json.content_id,\n  \"domain\": $json.domain,\n  \"prompt\": $json.generation_prompt,\n  \"style_parameters\": $json.style_parameters,\n  \"source_metadata\": {\n    \"title\": $json.source_title,\n    \"description\": $json.source_description,\n    \"url\": $json.source_url,\n    \"pub_date\": $json.pub_date\n  }\n} }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 45000
+        }
+      },
+      "id": "content-generator-test",
+      "name": "Content Generator Test",
+      "type": "n8n-nodes-base.httpRequest", 
+      "typeVersion": 4.1,
+      "position": [460, 300],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [680, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Test Data Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Data Generator": {
+      "main": [
+        [
+          {
+            "node": "Content Generator Test",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Generator Test": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-13T07:05:00.000Z",
+      "updatedAt": "2025-08-13T07:05:00.000Z",
+      "id": "content-gen-test",
+      "name": "content-gen-test"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-13T07:05:00.000Z",
+  "versionId": "v1.0.0-test"
+}

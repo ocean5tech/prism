@@ -1,0 +1,97 @@
+{
+  "timestamp": "2025-08-11T16:23:55.865427",
+  "tests_passed": 4,
+  "tests_failed": 3,
+  "evidence": [
+    {
+      "test": "Basic Connectivity",
+      "status": "FAIL",
+      "timestamp": "2025-08-11T16:23:56.430679",
+      "details": "Unexpected response: 403",
+      "data": {
+        "status_code": 403
+      }
+    },
+    {
+      "test": "Health Endpoint",
+      "status": "FAIL",
+      "timestamp": "2025-08-11T16:23:57.497418",
+      "details": "Health endpoint returned: 403"
+    },
+    {
+      "test": "API Availability",
+      "status": "FAIL",
+      "timestamp": "2025-08-11T16:23:58.572960",
+      "details": "API endpoint unexpected response: 403"
+    },
+    {
+      "test": "Process Check",
+      "status": "PASS",
+      "timestamp": "2025-08-11T16:23:59.105436",
+      "details": "n8n process is running (4 processes found)",
+      "data": {
+        "processes": [
+          "wyatt     148178  0.0  0.0   9620  2184 ?        Ss   15:10   0:00 /usr/bin/conmon --api-version 1 -c 9d776c4ade40538a9f0ecf9c07a5ef0e646053590deb27fa1bcc182d5e55fd49 -u 9d776c4ade40538a9f0ecf9c07a5ef0e646053590deb27fa1bcc182d5e55fd49 -r /usr/bin/crun -b /home/wyatt/.local/share/containers/storage/overlay-containers/9d776c4ade40538a9f0ecf9c07a5ef0e646053590deb27fa1bcc182d5e55fd49/userdata -p /run/user/1000/containers/overlay-containers/9d776c4ade40538a9f0ecf9c07a5ef0e646053590deb27fa1bcc182d5e55fd49/userdata/pidfile -n prism-n8n --exit-dir /run/user/1000/libpod/tmp/exits --full-attach -s -l journald --log-level warning --syslog --runtime-arg --log-format=json --runtime-arg --log --runtime-arg=/run/user/1000/containers/overlay-containers/9d776c4ade40538a9f0ecf9c07a5ef0e646053590deb27fa1bcc182d5e55fd49/userdata/oci-log --conmon-pidfile /run/user/1000/containers/overlay-containers/9d776c4ade40538a9f0ecf9c07a5ef0e646053590deb27fa1bcc182d5e55fd49/userdata/conmon.pid --exit-command /usr/bin/podman --exit-command-arg --root --exit-command-arg /home/wyatt/.local/share/containers/storage --exit-command-arg --runroot --exit-command-arg /run/user/1000/containers --exit-command-arg --log-level --exit-command-arg warning --exit-command-arg --cgroup-manager --exit-command-arg systemd --exit-command-arg --tmpdir --exit-command-arg /run/user/1000/libpod/tmp --exit-command-arg --network-config-dir --exit-command-arg  --exit-command-arg --network-backend --exit-command-arg netavark --exit-command-arg --volumepath --exit-command-arg /home/wyatt/.local/share/containers/storage/volumes --exit-command-arg --db-backend --exit-command-arg sqlite --exit-command-arg --transient-store=false --exit-command-arg --runtime --exit-command-arg crun --exit-command-arg --storage-driver --exit-command-arg overlay --exit-command-arg --events-backend --exit-command-arg journald --exit-command-arg container --exit-command-arg cleanup --exit-command-arg 9d776c4ade40538a9f0ecf9c07a5ef0e646053590deb27fa1bcc182d5e55fd49",
+          "100999    148182  0.2  2.8 32860212 228640 ?     Sl   15:10   0:11 node /usr/local/bin/n8n",
+          "wyatt     152760  0.0  0.0   4888  3456 ?        Ss   16:23   0:00 /bin/bash -c -l source /home/wyatt/.claude/shell-snapshots/snapshot-bash-1754619701015-1xzqru.sh && eval 'cd /home/wyatt/dev-projects/Prism && python3 n8n-validation-test.py' \\< /dev/null && pwd -P >| /tmp/claude-1afb-cwd"
+        ]
+      }
+    },
+    {
+      "test": "Port Listening Check",
+      "status": "PASS",
+      "timestamp": "2025-08-11T16:23:59.612313",
+      "details": "Port 5679 is being listened on",
+      "data": {
+        "port_info": [
+          "LISTEN 0      4096                *:5679             *:*    users:((\"rootlessport\",pid=148161,fd=11))"
+        ]
+      }
+    },
+    {
+      "test": "Workflow Files Validation",
+      "status": "PASS",
+      "timestamp": "2025-08-11T16:24:00.114872",
+      "details": "All 3 workflow files are valid JSON with proper structure",
+      "data": [
+        {
+          "file": "01-content-generation-pipeline.json",
+          "name": "Content Generation Pipeline",
+          "nodes": 11,
+          "valid": true
+        },
+        {
+          "file": "02-adversarial-optimization.json",
+          "name": "Adversarial Optimization Loop",
+          "nodes": 12,
+          "valid": true
+        },
+        {
+          "file": "03-error-handler-workflow.json",
+          "name": "Global Error Handler",
+          "nodes": 15,
+          "valid": true
+        }
+      ]
+    },
+    {
+      "test": "Workflow Content Analysis",
+      "status": "PASS",
+      "timestamp": "2025-08-11T16:24:00.615828",
+      "details": "Complex workflow with 11 nodes, API integration: True",
+      "data": {
+        "workflow_name": "Content Generation Pipeline",
+        "total_nodes": 11,
+        "node_types": {
+          "n8n-nodes-base.rssFeedRead": 1,
+          "n8n-nodes-base.httpRequest": 5,
+          "n8n-nodes-base.if": 4,
+          "n8n-nodes-base.executeWorkflow": 1
+        },
+        "has_connections": true,
+        "has_error_handling": true,
+        "timeout_configured": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+{
+  "name": "Simple Content Test",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "simple-content-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [120, 300],
+      "webhookId": "simple-content-test"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8010/api/v1/content/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "{\n  \"content_id\": \"simple_test_123\",\n  \"domain\": \"finance\",\n  \"prompt\": \"Write a simple test article about market trends\",\n  \"style_parameters\": {\n    \"tone\": \"professional\",\n    \"complexity\": \"intermediate\",\n    \"structure\": \"analysis\",\n    \"length\": \"medium\",\n    \"perspective\": \"third-person\"\n  },\n  \"source_metadata\": {\n    \"title\": \"Simple Test Article\",\n    \"description\": \"Testing content generation with static data\",\n    \"url\": \"https://example.com/test\",\n    \"pub_date\": \"2025-08-13T08:00:00Z\"\n  }\n}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "simple-content-generator",
+      "name": "Simple Content Generator",
+      "type": "n8n-nodes-base.httpRequest", 
+      "typeVersion": 4.1,
+      "position": [340, 300],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "webhook-response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [560, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Simple Content Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Content Generator": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-13T08:25:00.000Z",
+      "updatedAt": "2025-08-13T08:25:00.000Z",
+      "id": "simple-content-test",
+      "name": "simple-content-test"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-13T08:25:00.000Z",
+  "versionId": "v1.0.0-simple"
+}

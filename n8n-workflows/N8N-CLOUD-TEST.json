@@ -1,0 +1,166 @@
+{
+  "name": "n8n Cloud HTTP Test",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "cloud-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [120, 300],
+      "webhookId": "cloud-test"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate test data for API call\nconst testPayload = {\n  content_id: `cloud_test_${Date.now()}`,\n  domain: 'finance',\n  prompt: 'Write a test article about market analysis',\n  style_parameters: {\n    tone: 'professional',\n    complexity: 'intermediate',\n    structure: 'analysis',\n    length: 'medium'\n  },\n  source_metadata: {\n    title: 'Cloud Test Article',\n    description: 'Testing n8n.cloud HTTP Request functionality',\n    url: 'https://example.com/cloud-test',\n    pub_date: new Date().toISOString()\n  }\n};\n\nconsole.log('Generated test payload for cloud testing');\nreturn [{ json: testPayload }];"
+      },
+      "id": "test-data",
+      "name": "Test Data Generator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_LOCAL_IP:8010/api/v1/content/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Test-Source",
+              "value": "n8n-cloud"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "api-test",
+      "name": "API Test Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://httpbin.org/post",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "httpbin-test",
+      "name": "HTTPBin Echo Test",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [720, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Test Data Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Data Generator": {
+      "main": [
+        [
+          {
+            "node": "HTTPBin Echo Test",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "API Test Call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTPBin Echo Test": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API Test Call": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-13T09:00:00.000Z",
+  "versionId": "v1.0.0-cloud-test"
+}

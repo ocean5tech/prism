@@ -1,0 +1,129 @@
+{
+  "name": "Simple AI Test Cloud",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-test-simple",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [120, 300],
+      "webhookId": "ai-test-simple"
+    },
+    {
+      "parameters": {
+        "feedUrl": "https://feeds.bloomberg.com/markets/news.rss",
+        "options": {}
+      },
+      "id": "rss-bloomberg",
+      "name": "RSS Bloomberg",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [300, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simple content processor\nconst items = $input.all();\nconst firstItem = items[0];\n\nif (!firstItem) {\n  return [{ json: { error: 'No RSS items found' } }];\n}\n\nconst title = firstItem.json.title || 'No title';\nconst description = firstItem.json.description || firstItem.json.contentSnippet || 'No description';\n\nconst prompt = `Write a professional 300-word analysis of this news item:\n\nTitle: ${title}\nDescription: ${description}\n\nProvide insights and analysis suitable for a business audience.`;\n\nconsole.log('Processed RSS item for AI generation');\n\nreturn [{\n  json: {\n    source_title: title,\n    source_description: description,\n    ai_prompt: prompt,\n    processing_time: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "content-processor",
+      "name": "Content Processor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "model": "claude-3-5-sonnet-20241022",
+        "messages": {
+          "values": [
+            {
+              "message": "={{$json.ai_prompt}}"
+            }
+          ]
+        }
+      },
+      "id": "claude-ai",
+      "name": "Claude AI",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1,
+      "position": [720, 300],
+      "credentials": {
+        "anthropicApi": {
+          "id": "YOUR_ANTHROPIC_CREDENTIAL_ID",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [940, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "RSS Bloomberg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RSS Bloomberg": {
+      "main": [
+        [
+          {
+            "node": "Content Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Processor": {
+      "main": [
+        [
+          {
+            "node": "Claude AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude AI": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-13T09:30:00.000Z",
+  "versionId": "v1.0.0-simple-test"
+}

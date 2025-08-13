@@ -1,0 +1,2153 @@
+{
+  "analysis_timestamp": "2025-08-12T15:34:13.781371",
+  "workflows_analyzed": [
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/03-multi-platform-publishing-FIXED.json",
+      "workflow_name": "Multi-Platform Publishing Workflow - FIXED",
+      "workflow_type": "fixed_version",
+      "urls_found": [
+        {
+          "url": "webhook/publishing-trigger",
+          "node_name": "Publishing Trigger",
+          "node_type": "n8n-nodes-base.webhook",
+          "node_id": "publishing-webhook",
+          "purpose": "Webhook Endpoint"
+        },
+        {
+          "url": "http://localhost:8010/api/v1/publishing/wordpress",
+          "node_name": "WordPress Publisher",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "wordpress-publisher",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8010/api/v1/publishing/medium",
+          "node_name": "Medium Publisher",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "medium-publisher",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8010/api/v1/publishing/linkedin",
+          "node_name": "LinkedIn Publisher",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "linkedin-publisher",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8010/api/v1/publishing/twitter",
+          "node_name": "Twitter Publisher",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "twitter-publisher",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8015/api/v1/analytics/publishing-success",
+          "node_name": "Log Publishing Success",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "log-success",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8015/api/v1/analytics/publishing-failure",
+          "node_name": "Log Publishing Failure",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "log-failure",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8015/api/v1/analytics/publishing-batch",
+          "node_name": "Store Batch Analytics",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "store-batch-analytics",
+          "purpose": "HTTP Request"
+        }
+      ],
+      "url_test_results": {
+        "webhook/publishing-trigger": {
+          "url": "webhook/publishing-trigger",
+          "status": "webhook_endpoint",
+          "status_code": null,
+          "response_time": null,
+          "error": null,
+          "accessible": true,
+          "proxy_bypassed": false,
+          "note": "Internal n8n webhook endpoint - not externally testable"
+        },
+        "http://localhost:8010/api/v1/publishing/wordpress": {
+          "url": "http://localhost:8010/api/v1/publishing/wordpress",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.574,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8010/api/v1/publishing/medium": {
+          "url": "http://localhost:8010/api/v1/publishing/medium",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.569,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8010/api/v1/publishing/linkedin": {
+          "url": "http://localhost:8010/api/v1/publishing/linkedin",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.575,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8010/api/v1/publishing/twitter": {
+          "url": "http://localhost:8010/api/v1/publishing/twitter",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.586,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8015/api/v1/analytics/publishing-success": {
+          "url": "http://localhost:8015/api/v1/analytics/publishing-success",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.573,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8015/api/v1/analytics/publishing-failure": {
+          "url": "http://localhost:8015/api/v1/analytics/publishing-failure",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.579,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8015/api/v1/analytics/publishing-batch": {
+          "url": "http://localhost:8015/api/v1/analytics/publishing-batch",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.572,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        }
+      },
+      "issues": [
+        "URL not accessible: http://localhost:8010/api/v1/publishing/wordpress (HTTP 403)",
+        "URL not accessible: http://localhost:8010/api/v1/publishing/medium (HTTP 403)",
+        "URL not accessible: http://localhost:8010/api/v1/publishing/linkedin (HTTP 403)",
+        "URL not accessible: http://localhost:8010/api/v1/publishing/twitter (HTTP 403)",
+        "URL not accessible: http://localhost:8015/api/v1/analytics/publishing-success (HTTP 403)",
+        "URL not accessible: http://localhost:8015/api/v1/analytics/publishing-failure (HTTP 403)",
+        "URL not accessible: http://localhost:8015/api/v1/analytics/publishing-batch (HTTP 403)"
+      ],
+      "status": "partially_functional"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/02-adversarial-quality-optimization-FIXED.json",
+      "workflow_name": "Adversarial Quality Optimization Workflow - FIXED",
+      "workflow_type": "fixed_version",
+      "urls_found": [
+        {
+          "url": "webhook/quality-optimization-trigger",
+          "node_name": "Quality Optimization Trigger",
+          "node_type": "n8n-nodes-base.webhook",
+          "node_id": "webhook-trigger",
+          "purpose": "Webhook Endpoint"
+        },
+        {
+          "url": "http://localhost:8010/api/v1/content/regenerate",
+          "node_name": "Regenerate with Adversarial Improvements",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "regenerate-content",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8015/api/v1/analytics/adversarial-learning",
+          "node_name": "Update Adversarial Learning Model",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "update-learning-model",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8010/api/v1/publishing/queue",
+          "node_name": "Queue Optimized Content",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "queue-optimized-content",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8015/api/v1/analytics/optimization-complete",
+          "node_name": "Log Optimization Complete",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "log-optimization-complete",
+          "purpose": "HTTP Request"
+        }
+      ],
+      "url_test_results": {
+        "webhook/quality-optimization-trigger": {
+          "url": "webhook/quality-optimization-trigger",
+          "status": "webhook_endpoint",
+          "status_code": null,
+          "response_time": null,
+          "error": null,
+          "accessible": true,
+          "proxy_bypassed": false,
+          "note": "Internal n8n webhook endpoint - not externally testable"
+        },
+        "http://localhost:8010/api/v1/content/regenerate": {
+          "url": "http://localhost:8010/api/v1/content/regenerate",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.573,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8015/api/v1/analytics/adversarial-learning": {
+          "url": "http://localhost:8015/api/v1/analytics/adversarial-learning",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.585,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8010/api/v1/publishing/queue": {
+          "url": "http://localhost:8010/api/v1/publishing/queue",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.575,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8015/api/v1/analytics/optimization-complete": {
+          "url": "http://localhost:8015/api/v1/analytics/optimization-complete",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.574,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        }
+      },
+      "issues": [
+        "URL not accessible: http://localhost:8010/api/v1/content/regenerate (HTTP 403)",
+        "URL not accessible: http://localhost:8015/api/v1/analytics/adversarial-learning (HTTP 403)",
+        "URL not accessible: http://localhost:8010/api/v1/publishing/queue (HTTP 403)",
+        "URL not accessible: http://localhost:8015/api/v1/analytics/optimization-complete (HTTP 403)"
+      ],
+      "status": "partially_functional"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/01-main-content-generation-pipeline-FIXED.json",
+      "workflow_name": "Main Content Generation Pipeline - FIXED",
+      "workflow_type": "fixed_version",
+      "urls_found": [
+        {
+          "url": "https://feeds.bloomberg.com/markets/news.rss",
+          "node_name": "RSS Monitor - Bloomberg Finance",
+          "node_type": "n8n-nodes-base.rssFeedRead",
+          "node_id": "rss-monitor",
+          "purpose": "RSS Feed"
+        },
+        {
+          "url": "http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}}",
+          "node_name": "Load Domain Config",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "load-domain-config",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8010/api/v1/content/generate",
+          "node_name": "Content Generator",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "content-generator",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8011/api/v1/detection/analyze",
+          "node_name": "Quality Detection Agent",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "quality-detector",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8010/api/v1/publishing/queue",
+          "node_name": "Queue for Publishing",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "queue-publishing",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8015/api/v1/analytics/events",
+          "node_name": "Log Generation Failure",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "log-failure",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://localhost:8015/api/v1/analytics/events",
+          "node_name": "Log Generation Success",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "log-success",
+          "purpose": "HTTP Request"
+        }
+      ],
+      "url_test_results": {
+        "https://feeds.bloomberg.com/markets/news.rss": {
+          "url": "https://feeds.bloomberg.com/markets/news.rss",
+          "accessible": true,
+          "valid_rss": true,
+          "status": "valid_rss",
+          "error": null,
+          "feed_info": {
+            "title": "Bloomberg Markets",
+            "item_count": 30
+          },
+          "status_code": 200
+        },
+        "http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}}": {
+          "url": "http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}}",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.584,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8010/api/v1/content/generate": {
+          "url": "http://localhost:8010/api/v1/content/generate",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.584,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8011/api/v1/detection/analyze": {
+          "url": "http://localhost:8011/api/v1/detection/analyze",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.588,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8010/api/v1/publishing/queue": {
+          "url": "http://localhost:8010/api/v1/publishing/queue",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.586,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        },
+        "http://localhost:8015/api/v1/analytics/events": {
+          "url": "http://localhost:8015/api/v1/analytics/events",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.588,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        }
+      },
+      "issues": [
+        "URL not accessible: http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}} (HTTP 403)",
+        "URL not accessible: http://localhost:8010/api/v1/content/generate (HTTP 403)",
+        "URL not accessible: http://localhost:8011/api/v1/detection/analyze (HTTP 403)",
+        "URL not accessible: http://localhost:8010/api/v1/publishing/queue (HTTP 403)",
+        "URL not accessible: http://localhost:8015/api/v1/analytics/events (HTTP 403)",
+        "URL not accessible: http://localhost:8015/api/v1/analytics/events (HTTP 403)"
+      ],
+      "status": "partially_functional"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/RSS-TEST-SIMPLE.json",
+      "workflow_name": "RSS Test - Simple",
+      "workflow_type": "rss_testing",
+      "urls_found": [
+        {
+          "url": "webhook/rss-test",
+          "node_name": "Manual Trigger",
+          "node_type": "n8n-nodes-base.webhook",
+          "node_id": "manual-trigger",
+          "purpose": "Webhook Endpoint"
+        },
+        {
+          "url": "https://feeds.reuters.com/reuters/topNews",
+          "node_name": "RSS Monitor - Reuters",
+          "node_type": "n8n-nodes-base.rssFeedRead",
+          "node_id": "rss-monitor-reuters",
+          "purpose": "RSS Feed"
+        }
+      ],
+      "url_test_results": {
+        "webhook/rss-test": {
+          "url": "webhook/rss-test",
+          "status": "webhook_endpoint",
+          "status_code": null,
+          "response_time": null,
+          "error": null,
+          "accessible": true,
+          "proxy_bypassed": false,
+          "note": "Internal n8n webhook endpoint - not externally testable"
+        },
+        "https://feeds.reuters.com/reuters/topNews": {
+          "url": "https://feeds.reuters.com/reuters/topNews",
+          "accessible": false,
+          "valid_rss": false,
+          "status": "error",
+          "error": "Proxy error: HTTPSConnectionPool(host='feeds.reuters.com', port=443): Max retries exceeded with url: /reuters/top...",
+          "feed_info": {}
+        }
+      },
+      "issues": [
+        "URL not accessible: https://feeds.reuters.com/reuters/topNews (Proxy error: HTTPSConnectionPool(host='feeds.reuters.com', port=443): Max retries exceeded with url: /reuters/top...)"
+      ],
+      "status": "partially_functional"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/02-adversarial-quality-optimization.json",
+      "workflow_name": "Adversarial Quality Optimization Workflow",
+      "workflow_type": "quality_optimization",
+      "urls_found": [
+        {
+          "url": "webhook/quality-optimization-trigger",
+          "node_name": "Quality Optimization Trigger",
+          "node_type": "n8n-nodes-base.webhook",
+          "node_id": "webhook-trigger",
+          "purpose": "Webhook Endpoint"
+        },
+        {
+          "url": "http://content-gen-service:8000/api/v1/content/regenerate",
+          "node_name": "Regenerate with Adversarial Improvements",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "regenerate-content",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/adversarial-learning",
+          "node_name": "Update Adversarial Learning Model",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "update-learning-model",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://publishing-service:8000/api/v1/publishing/queue",
+          "node_name": "Queue Optimized Content",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "queue-optimized-content",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/optimization-complete",
+          "node_name": "Log Optimization Complete",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "log-optimization-complete",
+          "purpose": "HTTP Request"
+        }
+      ],
+      "url_test_results": {
+        "webhook/quality-optimization-trigger": {
+          "url": "webhook/quality-optimization-trigger",
+          "status": "webhook_endpoint",
+          "status_code": null,
+          "response_time": null,
+          "error": null,
+          "accessible": true,
+          "proxy_bypassed": false,
+          "note": "Internal n8n webhook endpoint - not externally testable"
+        },
+        "http://content-gen-service:8000/api/v1/content/regenerate": {
+          "url": "http://content-gen-service:8000/api/v1/content/regenerate",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.599,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/analytics/adversarial-learning": {
+          "url": "http://analytics-service:8000/api/v1/analytics/adversarial-learning",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.589,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://publishing-service:8000/api/v1/publishing/queue": {
+          "url": "http://publishing-service:8000/api/v1/publishing/queue",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.581,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/analytics/optimization-complete": {
+          "url": "http://analytics-service:8000/api/v1/analytics/optimization-complete",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.58,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        }
+      },
+      "issues": [
+        "URL not accessible: http://content-gen-service:8000/api/v1/content/regenerate (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/adversarial-learning (HTTP 503)",
+        "URL not accessible: http://publishing-service:8000/api/v1/publishing/queue (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/optimization-complete (HTTP 503)"
+      ],
+      "status": "partially_functional"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/02-adversarial-optimization.json",
+      "workflow_name": "Adversarial Optimization Loop",
+      "workflow_type": "quality_optimization",
+      "urls_found": [
+        {
+          "url": "webhook/adversarial-trigger",
+          "node_name": "Adversarial Webhook",
+          "node_type": "n8n-nodes-base.webhook",
+          "node_id": "adversarial-trigger",
+          "purpose": "Webhook Endpoint"
+        },
+        {
+          "url": "http://detection-service:8000/api/v1/patterns/analyze",
+          "node_name": "Pattern Detection",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "pattern-detect",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://content-generation-service:8000/api/v1/style/generate-variations",
+          "node_name": "Generate Style Variations",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "generate-variations",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://content-generation-service:8000/api/v1/content/test-generate",
+          "node_name": "Test Generation",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "test-generate",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://detection-service:8000/api/v1/quality/score-variation",
+          "node_name": "Score Variation",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "score-variation",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://configuration-service:8000/api/v1/domains/update-style-config",
+          "node_name": "Update Style Configuration",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "update-config",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/metrics/adversarial-optimization",
+          "node_name": "Record Optimization Metrics",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "record-optimization",
+          "purpose": "HTTP Request"
+        }
+      ],
+      "url_test_results": {
+        "webhook/adversarial-trigger": {
+          "url": "webhook/adversarial-trigger",
+          "status": "webhook_endpoint",
+          "status_code": null,
+          "response_time": null,
+          "error": null,
+          "accessible": true,
+          "proxy_bypassed": false,
+          "note": "Internal n8n webhook endpoint - not externally testable"
+        },
+        "http://detection-service:8000/api/v1/patterns/analyze": {
+          "url": "http://detection-service:8000/api/v1/patterns/analyze",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.575,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://content-generation-service:8000/api/v1/style/generate-variations": {
+          "url": "http://content-generation-service:8000/api/v1/style/generate-variations",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.577,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://content-generation-service:8000/api/v1/content/test-generate": {
+          "url": "http://content-generation-service:8000/api/v1/content/test-generate",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.577,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://detection-service:8000/api/v1/quality/score-variation": {
+          "url": "http://detection-service:8000/api/v1/quality/score-variation",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.568,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://configuration-service:8000/api/v1/domains/update-style-config": {
+          "url": "http://configuration-service:8000/api/v1/domains/update-style-config",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.604,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/metrics/adversarial-optimization": {
+          "url": "http://analytics-service:8000/api/v1/metrics/adversarial-optimization",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.574,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        }
+      },
+      "issues": [
+        "URL not accessible: http://detection-service:8000/api/v1/patterns/analyze (HTTP 503)",
+        "URL not accessible: http://content-generation-service:8000/api/v1/style/generate-variations (HTTP 503)",
+        "URL not accessible: http://content-generation-service:8000/api/v1/content/test-generate (HTTP 503)",
+        "URL not accessible: http://detection-service:8000/api/v1/quality/score-variation (HTTP 503)",
+        "URL not accessible: http://configuration-service:8000/api/v1/domains/update-style-config (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/metrics/adversarial-optimization (HTTP 503)"
+      ],
+      "status": "partially_functional"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/04-domain-expansion-workflow.json",
+      "workflow_name": "",
+      "workflow_type": "other",
+      "urls_found": [],
+      "url_test_results": {},
+      "issues": [
+        "Failed to analyze workflow: Expecting property name enclosed in double quotes: line 81 column 35 (char 8688)"
+      ],
+      "status": "analysis_failed"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/01-main-content-generation-pipeline.json",
+      "workflow_name": "Main Content Generation Pipeline",
+      "workflow_type": "content_generation",
+      "urls_found": [
+        {
+          "url": "https://feeds.bloomberg.com/markets/news.rss",
+          "node_name": "RSS Monitor",
+          "node_type": "n8n-nodes-base.rssFeedRead",
+          "node_id": "rss-monitor",
+          "purpose": "RSS Feed"
+        },
+        {
+          "url": "http://config-service:8000/api/v1/config/domains/{{$json[\"domain\"]}}",
+          "node_name": "Load Domain Config",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "load-domain-config",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://content-gen-service:8000/api/v1/content/generate",
+          "node_name": "Content Generator",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "content-generator",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://detection-service:8000/api/v1/detection/analyze",
+          "node_name": "Quality Detection Agent",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "quality-detector",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://publishing-service:8000/api/v1/publishing/queue",
+          "node_name": "Queue for Publishing",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "queue-publishing",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/events",
+          "node_name": "Log Generation Failure",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "log-failure",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/events",
+          "node_name": "Log Generation Success",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "log-success",
+          "purpose": "HTTP Request"
+        }
+      ],
+      "url_test_results": {
+        "https://feeds.bloomberg.com/markets/news.rss": {
+          "url": "https://feeds.bloomberg.com/markets/news.rss",
+          "accessible": true,
+          "valid_rss": true,
+          "status": "valid_rss",
+          "error": null,
+          "feed_info": {
+            "title": "Bloomberg Markets",
+            "item_count": 30
+          },
+          "status_code": 200
+        },
+        "http://config-service:8000/api/v1/config/domains/{{$json[\"domain\"]}}": {
+          "url": "http://config-service:8000/api/v1/config/domains/{{$json[\"domain\"]}}",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.579,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://content-gen-service:8000/api/v1/content/generate": {
+          "url": "http://content-gen-service:8000/api/v1/content/generate",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.573,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://detection-service:8000/api/v1/detection/analyze": {
+          "url": "http://detection-service:8000/api/v1/detection/analyze",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.576,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://publishing-service:8000/api/v1/publishing/queue": {
+          "url": "http://publishing-service:8000/api/v1/publishing/queue",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.577,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/analytics/events": {
+          "url": "http://analytics-service:8000/api/v1/analytics/events",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.577,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        }
+      },
+      "issues": [
+        "URL not accessible: http://config-service:8000/api/v1/config/domains/{{$json[\"domain\"]}} (HTTP 503)",
+        "URL not accessible: http://content-gen-service:8000/api/v1/content/generate (HTTP 503)",
+        "URL not accessible: http://detection-service:8000/api/v1/detection/analyze (HTTP 503)",
+        "URL not accessible: http://publishing-service:8000/api/v1/publishing/queue (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/events (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/events (HTTP 503)"
+      ],
+      "status": "partially_functional"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/01-main-content-generation-pipeline-TESTING.json",
+      "workflow_name": "Main Content Generation Pipeline - TESTING",
+      "workflow_type": "testing_version",
+      "urls_found": [
+        {
+          "url": "https://feeds.bloomberg.com/markets/news.rss",
+          "node_name": "RSS Monitor - Bloomberg Finance",
+          "node_type": "n8n-nodes-base.rssFeedRead",
+          "node_id": "rss-monitor",
+          "purpose": "RSS Feed"
+        },
+        {
+          "url": "http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}}",
+          "node_name": "Load Domain Config",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "load-domain-config",
+          "purpose": "HTTP Request"
+        }
+      ],
+      "url_test_results": {
+        "https://feeds.bloomberg.com/markets/news.rss": {
+          "url": "https://feeds.bloomberg.com/markets/news.rss",
+          "accessible": true,
+          "valid_rss": true,
+          "status": "valid_rss",
+          "error": null,
+          "feed_info": {
+            "title": "Bloomberg Markets",
+            "item_count": 30
+          },
+          "status_code": 200
+        },
+        "http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}}": {
+          "url": "http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}}",
+          "status": "http_error",
+          "status_code": 403,
+          "response_time": 0.571,
+          "error": "HTTP 403",
+          "accessible": false,
+          "proxy_bypassed": true
+        }
+      },
+      "issues": [
+        "URL not accessible: http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}} (HTTP 403)"
+      ],
+      "status": "partially_functional"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/03-multi-platform-publishing.json",
+      "workflow_name": "Multi-Platform Publishing Workflow",
+      "workflow_type": "publishing",
+      "urls_found": [
+        {
+          "url": "webhook/publishing-trigger",
+          "node_name": "Publishing Trigger",
+          "node_type": "n8n-nodes-base.webhook",
+          "node_id": "publishing-webhook",
+          "purpose": "Webhook Endpoint"
+        },
+        {
+          "url": "http://publishing-service:8000/api/v1/publishing/wordpress",
+          "node_name": "WordPress Publisher",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "wordpress-publisher",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://publishing-service:8000/api/v1/publishing/medium",
+          "node_name": "Medium Publisher",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "medium-publisher",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://publishing-service:8000/api/v1/publishing/linkedin",
+          "node_name": "LinkedIn Publisher",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "linkedin-publisher",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://publishing-service:8000/api/v1/publishing/twitter",
+          "node_name": "Twitter Publisher",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "twitter-publisher",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/publishing-success",
+          "node_name": "Log Publishing Success",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "log-success",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/publishing-failure",
+          "node_name": "Log Publishing Failure",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "log-failure",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/publishing-batch",
+          "node_name": "Store Batch Analytics",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "store-batch-analytics",
+          "purpose": "HTTP Request"
+        }
+      ],
+      "url_test_results": {
+        "webhook/publishing-trigger": {
+          "url": "webhook/publishing-trigger",
+          "status": "webhook_endpoint",
+          "status_code": null,
+          "response_time": null,
+          "error": null,
+          "accessible": true,
+          "proxy_bypassed": false,
+          "note": "Internal n8n webhook endpoint - not externally testable"
+        },
+        "http://publishing-service:8000/api/v1/publishing/wordpress": {
+          "url": "http://publishing-service:8000/api/v1/publishing/wordpress",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.574,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://publishing-service:8000/api/v1/publishing/medium": {
+          "url": "http://publishing-service:8000/api/v1/publishing/medium",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.572,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://publishing-service:8000/api/v1/publishing/linkedin": {
+          "url": "http://publishing-service:8000/api/v1/publishing/linkedin",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.572,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://publishing-service:8000/api/v1/publishing/twitter": {
+          "url": "http://publishing-service:8000/api/v1/publishing/twitter",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.574,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/analytics/publishing-success": {
+          "url": "http://analytics-service:8000/api/v1/analytics/publishing-success",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.574,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/analytics/publishing-failure": {
+          "url": "http://analytics-service:8000/api/v1/analytics/publishing-failure",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.574,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/analytics/publishing-batch": {
+          "url": "http://analytics-service:8000/api/v1/analytics/publishing-batch",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": -1.078,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        }
+      },
+      "issues": [
+        "URL not accessible: http://publishing-service:8000/api/v1/publishing/wordpress (HTTP 503)",
+        "URL not accessible: http://publishing-service:8000/api/v1/publishing/medium (HTTP 503)",
+        "URL not accessible: http://publishing-service:8000/api/v1/publishing/linkedin (HTTP 503)",
+        "URL not accessible: http://publishing-service:8000/api/v1/publishing/twitter (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/publishing-success (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/publishing-failure (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/publishing-batch (HTTP 503)"
+      ],
+      "status": "partially_functional"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/05-monitoring-analytics-workflow.json",
+      "workflow_name": "Monitoring and Analytics Workflow",
+      "workflow_type": "monitoring",
+      "urls_found": [
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/system-status",
+          "node_name": "Collect System Metrics",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "collect-system-metrics",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/content-performance",
+          "node_name": "Collect Content Performance",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "collect-content-metrics",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/platform-performance",
+          "node_name": "Collect Platform Performance",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "collect-platform-metrics",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://notification-service:8000/api/v1/notifications/send-alerts",
+          "node_name": "Send Alert Notifications",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "send-notifications",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/dashboard-update",
+          "node_name": "Update Analytics Dashboard",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "update-dashboard",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/monitoring-log",
+          "node_name": "Store Monitoring Data",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "store-monitoring-data",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/analytics/daily-report",
+          "node_name": "Store Daily Report",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "store-daily-report",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://notification-service:8000/api/v1/notifications/daily-report",
+          "node_name": "Send Daily Report",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "send-daily-report",
+          "purpose": "HTTP Request"
+        }
+      ],
+      "url_test_results": {
+        "http://analytics-service:8000/api/v1/analytics/system-status": {
+          "url": "http://analytics-service:8000/api/v1/analytics/system-status",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.594,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/analytics/content-performance": {
+          "url": "http://analytics-service:8000/api/v1/analytics/content-performance",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.575,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/analytics/platform-performance": {
+          "url": "http://analytics-service:8000/api/v1/analytics/platform-performance",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.575,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://notification-service:8000/api/v1/notifications/send-alerts": {
+          "url": "http://notification-service:8000/api/v1/notifications/send-alerts",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.583,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/analytics/dashboard-update": {
+          "url": "http://analytics-service:8000/api/v1/analytics/dashboard-update",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.575,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/analytics/monitoring-log": {
+          "url": "http://analytics-service:8000/api/v1/analytics/monitoring-log",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.579,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/analytics/daily-report": {
+          "url": "http://analytics-service:8000/api/v1/analytics/daily-report",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.578,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://notification-service:8000/api/v1/notifications/daily-report": {
+          "url": "http://notification-service:8000/api/v1/notifications/daily-report",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.585,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        }
+      },
+      "issues": [
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/system-status (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/content-performance (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/platform-performance (HTTP 503)",
+        "URL not accessible: http://notification-service:8000/api/v1/notifications/send-alerts (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/dashboard-update (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/monitoring-log (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/analytics/daily-report (HTTP 503)",
+        "URL not accessible: http://notification-service:8000/api/v1/notifications/daily-report (HTTP 503)"
+      ],
+      "status": "non_functional"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/01-content-generation-pipeline.json",
+      "workflow_name": "Content Generation Pipeline",
+      "workflow_type": "content_generation",
+      "urls_found": [
+        {
+          "url": "http://configuration-service:8000/api/v1/domains/classify",
+          "node_name": "Domain Classification",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "domain-classify",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://content-generation-service:8000/api/v1/content/generate",
+          "node_name": "Content Generation",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "content-generate",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://detection-service:8000/api/v1/quality/analyze",
+          "node_name": "Quality Detection",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "quality-detect",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://publishing-service:8000/api/v1/publish/multi-platform",
+          "node_name": "Multi-Platform Publishing",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "publish-content",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/metrics/record",
+          "node_name": "Record Metrics",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "record-metrics",
+          "purpose": "HTTP Request"
+        }
+      ],
+      "url_test_results": {
+        "http://configuration-service:8000/api/v1/domains/classify": {
+          "url": "http://configuration-service:8000/api/v1/domains/classify",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.577,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://content-generation-service:8000/api/v1/content/generate": {
+          "url": "http://content-generation-service:8000/api/v1/content/generate",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.57,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://detection-service:8000/api/v1/quality/analyze": {
+          "url": "http://detection-service:8000/api/v1/quality/analyze",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.57,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://publishing-service:8000/api/v1/publish/multi-platform": {
+          "url": "http://publishing-service:8000/api/v1/publish/multi-platform",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.566,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/metrics/record": {
+          "url": "http://analytics-service:8000/api/v1/metrics/record",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.58,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        }
+      },
+      "issues": [
+        "URL not accessible: http://configuration-service:8000/api/v1/domains/classify (HTTP 503)",
+        "URL not accessible: http://content-generation-service:8000/api/v1/content/generate (HTTP 503)",
+        "URL not accessible: http://detection-service:8000/api/v1/quality/analyze (HTTP 503)",
+        "URL not accessible: http://publishing-service:8000/api/v1/publish/multi-platform (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/metrics/record (HTTP 503)"
+      ],
+      "status": "non_functional"
+    },
+    {
+      "filepath": "/home/wyatt/dev-projects/Prism/n8n-workflows/03-error-handler-workflow.json",
+      "workflow_name": "Global Error Handler",
+      "workflow_type": "publishing",
+      "urls_found": [
+        {
+          "url": "webhook/error-handler",
+          "node_name": "Error Webhook",
+          "node_type": "n8n-nodes-base.webhook",
+          "node_id": "error-webhook",
+          "purpose": "Webhook Endpoint"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/alerts/critical",
+          "node_name": "Send Critical Alert",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "send-critical-alert",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/recovery/success",
+          "node_name": "Log Recovery Success",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "log-recovery-success",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/dead-letter-queue",
+          "node_name": "Dead Letter Queue",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "dead-letter-queue",
+          "purpose": "HTTP Request"
+        },
+        {
+          "url": "http://analytics-service:8000/api/v1/metrics/error-handled",
+          "node_name": "Record Error Metrics",
+          "node_type": "n8n-nodes-base.httpRequest",
+          "node_id": "record-error-metrics",
+          "purpose": "HTTP Request"
+        }
+      ],
+      "url_test_results": {
+        "webhook/error-handler": {
+          "url": "webhook/error-handler",
+          "status": "webhook_endpoint",
+          "status_code": null,
+          "response_time": null,
+          "error": null,
+          "accessible": true,
+          "proxy_bypassed": false,
+          "note": "Internal n8n webhook endpoint - not externally testable"
+        },
+        "http://analytics-service:8000/api/v1/alerts/critical": {
+          "url": "http://analytics-service:8000/api/v1/alerts/critical",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.562,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/recovery/success": {
+          "url": "http://analytics-service:8000/api/v1/recovery/success",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.565,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/dead-letter-queue": {
+          "url": "http://analytics-service:8000/api/v1/dead-letter-queue",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.563,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        },
+        "http://analytics-service:8000/api/v1/metrics/error-handled": {
+          "url": "http://analytics-service:8000/api/v1/metrics/error-handled",
+          "status": "http_error",
+          "status_code": 503,
+          "response_time": 0.563,
+          "error": "HTTP 503",
+          "accessible": false,
+          "proxy_bypassed": false
+        }
+      },
+      "issues": [
+        "URL not accessible: http://analytics-service:8000/api/v1/alerts/critical (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/recovery/success (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/dead-letter-queue (HTTP 503)",
+        "URL not accessible: http://analytics-service:8000/api/v1/metrics/error-handled (HTTP 503)"
+      ],
+      "status": "partially_functional"
+    }
+  ],
+  "url_tests": {
+    "webhook/publishing-trigger": {
+      "url": "webhook/publishing-trigger",
+      "status": "webhook_endpoint",
+      "status_code": null,
+      "response_time": null,
+      "error": null,
+      "accessible": true,
+      "proxy_bypassed": false,
+      "note": "Internal n8n webhook endpoint - not externally testable"
+    },
+    "http://localhost:8010/api/v1/publishing/wordpress": {
+      "url": "http://localhost:8010/api/v1/publishing/wordpress",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.574,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8010/api/v1/publishing/medium": {
+      "url": "http://localhost:8010/api/v1/publishing/medium",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.569,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8010/api/v1/publishing/linkedin": {
+      "url": "http://localhost:8010/api/v1/publishing/linkedin",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.575,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8010/api/v1/publishing/twitter": {
+      "url": "http://localhost:8010/api/v1/publishing/twitter",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.586,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8015/api/v1/analytics/publishing-success": {
+      "url": "http://localhost:8015/api/v1/analytics/publishing-success",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.573,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8015/api/v1/analytics/publishing-failure": {
+      "url": "http://localhost:8015/api/v1/analytics/publishing-failure",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.579,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8015/api/v1/analytics/publishing-batch": {
+      "url": "http://localhost:8015/api/v1/analytics/publishing-batch",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.572,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "webhook/quality-optimization-trigger": {
+      "url": "webhook/quality-optimization-trigger",
+      "status": "webhook_endpoint",
+      "status_code": null,
+      "response_time": null,
+      "error": null,
+      "accessible": true,
+      "proxy_bypassed": false,
+      "note": "Internal n8n webhook endpoint - not externally testable"
+    },
+    "http://localhost:8010/api/v1/content/regenerate": {
+      "url": "http://localhost:8010/api/v1/content/regenerate",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.573,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8015/api/v1/analytics/adversarial-learning": {
+      "url": "http://localhost:8015/api/v1/analytics/adversarial-learning",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.585,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8010/api/v1/publishing/queue": {
+      "url": "http://localhost:8010/api/v1/publishing/queue",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.586,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8015/api/v1/analytics/optimization-complete": {
+      "url": "http://localhost:8015/api/v1/analytics/optimization-complete",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.574,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}}": {
+      "url": "http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}}",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.571,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8010/api/v1/content/generate": {
+      "url": "http://localhost:8010/api/v1/content/generate",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.584,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8011/api/v1/detection/analyze": {
+      "url": "http://localhost:8011/api/v1/detection/analyze",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.588,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "http://localhost:8015/api/v1/analytics/events": {
+      "url": "http://localhost:8015/api/v1/analytics/events",
+      "status": "http_error",
+      "status_code": 403,
+      "response_time": 0.588,
+      "error": "HTTP 403",
+      "accessible": false,
+      "proxy_bypassed": true
+    },
+    "webhook/rss-test": {
+      "url": "webhook/rss-test",
+      "status": "webhook_endpoint",
+      "status_code": null,
+      "response_time": null,
+      "error": null,
+      "accessible": true,
+      "proxy_bypassed": false,
+      "note": "Internal n8n webhook endpoint - not externally testable"
+    },
+    "http://content-gen-service:8000/api/v1/content/regenerate": {
+      "url": "http://content-gen-service:8000/api/v1/content/regenerate",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.599,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/adversarial-learning": {
+      "url": "http://analytics-service:8000/api/v1/analytics/adversarial-learning",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.589,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://publishing-service:8000/api/v1/publishing/queue": {
+      "url": "http://publishing-service:8000/api/v1/publishing/queue",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.577,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/optimization-complete": {
+      "url": "http://analytics-service:8000/api/v1/analytics/optimization-complete",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.58,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "webhook/adversarial-trigger": {
+      "url": "webhook/adversarial-trigger",
+      "status": "webhook_endpoint",
+      "status_code": null,
+      "response_time": null,
+      "error": null,
+      "accessible": true,
+      "proxy_bypassed": false,
+      "note": "Internal n8n webhook endpoint - not externally testable"
+    },
+    "http://detection-service:8000/api/v1/patterns/analyze": {
+      "url": "http://detection-service:8000/api/v1/patterns/analyze",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.575,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://content-generation-service:8000/api/v1/style/generate-variations": {
+      "url": "http://content-generation-service:8000/api/v1/style/generate-variations",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.577,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://content-generation-service:8000/api/v1/content/test-generate": {
+      "url": "http://content-generation-service:8000/api/v1/content/test-generate",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.577,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://detection-service:8000/api/v1/quality/score-variation": {
+      "url": "http://detection-service:8000/api/v1/quality/score-variation",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.568,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://configuration-service:8000/api/v1/domains/update-style-config": {
+      "url": "http://configuration-service:8000/api/v1/domains/update-style-config",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.604,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/metrics/adversarial-optimization": {
+      "url": "http://analytics-service:8000/api/v1/metrics/adversarial-optimization",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.574,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://config-service:8000/api/v1/config/domains/{{$json[\"domain\"]}}": {
+      "url": "http://config-service:8000/api/v1/config/domains/{{$json[\"domain\"]}}",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.579,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://content-gen-service:8000/api/v1/content/generate": {
+      "url": "http://content-gen-service:8000/api/v1/content/generate",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.573,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://detection-service:8000/api/v1/detection/analyze": {
+      "url": "http://detection-service:8000/api/v1/detection/analyze",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.576,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/events": {
+      "url": "http://analytics-service:8000/api/v1/analytics/events",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.577,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://publishing-service:8000/api/v1/publishing/wordpress": {
+      "url": "http://publishing-service:8000/api/v1/publishing/wordpress",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.574,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://publishing-service:8000/api/v1/publishing/medium": {
+      "url": "http://publishing-service:8000/api/v1/publishing/medium",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.572,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://publishing-service:8000/api/v1/publishing/linkedin": {
+      "url": "http://publishing-service:8000/api/v1/publishing/linkedin",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.572,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://publishing-service:8000/api/v1/publishing/twitter": {
+      "url": "http://publishing-service:8000/api/v1/publishing/twitter",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.574,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/publishing-success": {
+      "url": "http://analytics-service:8000/api/v1/analytics/publishing-success",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.574,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/publishing-failure": {
+      "url": "http://analytics-service:8000/api/v1/analytics/publishing-failure",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.574,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/publishing-batch": {
+      "url": "http://analytics-service:8000/api/v1/analytics/publishing-batch",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": -1.078,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/system-status": {
+      "url": "http://analytics-service:8000/api/v1/analytics/system-status",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.594,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/content-performance": {
+      "url": "http://analytics-service:8000/api/v1/analytics/content-performance",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.575,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/platform-performance": {
+      "url": "http://analytics-service:8000/api/v1/analytics/platform-performance",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.575,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://notification-service:8000/api/v1/notifications/send-alerts": {
+      "url": "http://notification-service:8000/api/v1/notifications/send-alerts",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.583,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/dashboard-update": {
+      "url": "http://analytics-service:8000/api/v1/analytics/dashboard-update",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.575,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/monitoring-log": {
+      "url": "http://analytics-service:8000/api/v1/analytics/monitoring-log",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.579,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/analytics/daily-report": {
+      "url": "http://analytics-service:8000/api/v1/analytics/daily-report",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.578,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://notification-service:8000/api/v1/notifications/daily-report": {
+      "url": "http://notification-service:8000/api/v1/notifications/daily-report",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.585,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://configuration-service:8000/api/v1/domains/classify": {
+      "url": "http://configuration-service:8000/api/v1/domains/classify",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.577,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://content-generation-service:8000/api/v1/content/generate": {
+      "url": "http://content-generation-service:8000/api/v1/content/generate",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.57,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://detection-service:8000/api/v1/quality/analyze": {
+      "url": "http://detection-service:8000/api/v1/quality/analyze",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.57,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://publishing-service:8000/api/v1/publish/multi-platform": {
+      "url": "http://publishing-service:8000/api/v1/publish/multi-platform",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.566,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/metrics/record": {
+      "url": "http://analytics-service:8000/api/v1/metrics/record",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.58,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "webhook/error-handler": {
+      "url": "webhook/error-handler",
+      "status": "webhook_endpoint",
+      "status_code": null,
+      "response_time": null,
+      "error": null,
+      "accessible": true,
+      "proxy_bypassed": false,
+      "note": "Internal n8n webhook endpoint - not externally testable"
+    },
+    "http://analytics-service:8000/api/v1/alerts/critical": {
+      "url": "http://analytics-service:8000/api/v1/alerts/critical",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.562,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/recovery/success": {
+      "url": "http://analytics-service:8000/api/v1/recovery/success",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.565,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/dead-letter-queue": {
+      "url": "http://analytics-service:8000/api/v1/dead-letter-queue",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.563,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    },
+    "http://analytics-service:8000/api/v1/metrics/error-handled": {
+      "url": "http://analytics-service:8000/api/v1/metrics/error-handled",
+      "status": "http_error",
+      "status_code": 503,
+      "response_time": 0.563,
+      "error": "HTTP 503",
+      "accessible": false,
+      "proxy_bypassed": false
+    }
+  },
+  "service_tests": {
+    "8010": {
+      "host": "localhost",
+      "port": 8010,
+      "service_name": "Content Generation Service",
+      "accessible": true,
+      "status": "port_open",
+      "error": null,
+      "response_time": 0.0,
+      "endpoints": {
+        "/health": {
+          "url": "http://localhost:8010/health",
+          "endpoint": "/health",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/content/generate": {
+          "url": "http://localhost:8010/api/v1/content/generate",
+          "endpoint": "/api/v1/content/generate",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/content/regenerate": {
+          "url": "http://localhost:8010/api/v1/content/regenerate",
+          "endpoint": "/api/v1/content/regenerate",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/publishing/queue": {
+          "url": "http://localhost:8010/api/v1/publishing/queue",
+          "endpoint": "/api/v1/publishing/queue",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/publishing/wordpress": {
+          "url": "http://localhost:8010/api/v1/publishing/wordpress",
+          "endpoint": "/api/v1/publishing/wordpress",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/publishing/medium": {
+          "url": "http://localhost:8010/api/v1/publishing/medium",
+          "endpoint": "/api/v1/publishing/medium",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/publishing/linkedin": {
+          "url": "http://localhost:8010/api/v1/publishing/linkedin",
+          "endpoint": "/api/v1/publishing/linkedin",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/publishing/twitter": {
+          "url": "http://localhost:8010/api/v1/publishing/twitter",
+          "endpoint": "/api/v1/publishing/twitter",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        }
+      },
+      "working_endpoints": 0,
+      "total_endpoints": 8
+    },
+    "8011": {
+      "host": "localhost",
+      "port": 8011,
+      "service_name": "Detection/Quality Analysis Service",
+      "accessible": true,
+      "status": "port_open",
+      "error": null,
+      "response_time": 0.001,
+      "endpoints": {
+        "/health": {
+          "url": "http://localhost:8011/health",
+          "endpoint": "/health",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/detection/analyze": {
+          "url": "http://localhost:8011/api/v1/detection/analyze",
+          "endpoint": "/api/v1/detection/analyze",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        }
+      },
+      "working_endpoints": 0,
+      "total_endpoints": 2
+    },
+    "8013": {
+      "host": "localhost",
+      "port": 8013,
+      "service_name": "Configuration Management Service",
+      "accessible": true,
+      "status": "port_open",
+      "error": null,
+      "response_time": 0.001,
+      "endpoints": {
+        "/health": {
+          "url": "http://localhost:8013/health",
+          "endpoint": "/health",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/config/domains/finance": {
+          "url": "http://localhost:8013/api/v1/config/domains/finance",
+          "endpoint": "/api/v1/config/domains/finance",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/config/domains/sports": {
+          "url": "http://localhost:8013/api/v1/config/domains/sports",
+          "endpoint": "/api/v1/config/domains/sports",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/config/domains/technology": {
+          "url": "http://localhost:8013/api/v1/config/domains/technology",
+          "endpoint": "/api/v1/config/domains/technology",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        }
+      },
+      "working_endpoints": 0,
+      "total_endpoints": 4
+    },
+    "8015": {
+      "host": "localhost",
+      "port": 8015,
+      "service_name": "Analytics Service",
+      "accessible": true,
+      "status": "port_open",
+      "error": null,
+      "response_time": 0.001,
+      "endpoints": {
+        "/health": {
+          "url": "http://localhost:8015/health",
+          "endpoint": "/health",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/analytics/events": {
+          "url": "http://localhost:8015/api/v1/analytics/events",
+          "endpoint": "/api/v1/analytics/events",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/analytics/adversarial-learning": {
+          "url": "http://localhost:8015/api/v1/analytics/adversarial-learning",
+          "endpoint": "/api/v1/analytics/adversarial-learning",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/analytics/optimization-complete": {
+          "url": "http://localhost:8015/api/v1/analytics/optimization-complete",
+          "endpoint": "/api/v1/analytics/optimization-complete",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/analytics/publishing-success": {
+          "url": "http://localhost:8015/api/v1/analytics/publishing-success",
+          "endpoint": "/api/v1/analytics/publishing-success",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/analytics/publishing-failure": {
+          "url": "http://localhost:8015/api/v1/analytics/publishing-failure",
+          "endpoint": "/api/v1/analytics/publishing-failure",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        },
+        "/api/v1/analytics/publishing-batch": {
+          "url": "http://localhost:8015/api/v1/analytics/publishing-batch",
+          "endpoint": "/api/v1/analytics/publishing-batch",
+          "accessible": false,
+          "status": "http_error",
+          "error": "HTTP 403",
+          "response_data": null,
+          "status_code": 403
+        }
+      },
+      "working_endpoints": 0,
+      "total_endpoints": 7
+    }
+  },
+  "rss_feed_tests": {
+    "https://feeds.bloomberg.com/markets/news.rss": {
+      "url": "https://feeds.bloomberg.com/markets/news.rss",
+      "accessible": true,
+      "valid_rss": true,
+      "status": "valid_rss",
+      "error": null,
+      "feed_info": {
+        "title": "Bloomberg Markets",
+        "item_count": 30
+      },
+      "status_code": 200
+    },
+    "https://feeds.reuters.com/reuters/topNews": {
+      "url": "https://feeds.reuters.com/reuters/topNews",
+      "accessible": false,
+      "valid_rss": false,
+      "status": "error",
+      "error": "Proxy error: HTTPSConnectionPool(host='feeds.reuters.com', port=443): Max retries exceeded with url: /reuters/top...",
+      "feed_info": {}
+    }
+  },
+  "endpoint_validation": {},
+  "summary": {
+    "total_urls": 60,
+    "available_urls": 6,
+    "total_services": 4,
+    "available_services": 4,
+    "working_endpoints": 0,
+    "total_endpoints": 21,
+    "critical_issues": [
+      "Microservice endpoint unavailable: http://localhost:8010/api/v1/publishing/wordpress",
+      "Microservice endpoint unavailable: http://localhost:8010/api/v1/publishing/medium",
+      "Microservice endpoint unavailable: http://localhost:8010/api/v1/publishing/linkedin",
+      "Microservice endpoint unavailable: http://localhost:8010/api/v1/publishing/twitter",
+      "Microservice endpoint unavailable: http://localhost:8015/api/v1/analytics/publishing-success",
+      "Microservice endpoint unavailable: http://localhost:8015/api/v1/analytics/publishing-failure",
+      "Microservice endpoint unavailable: http://localhost:8015/api/v1/analytics/publishing-batch",
+      "Microservice endpoint unavailable: http://localhost:8010/api/v1/content/regenerate",
+      "Microservice endpoint unavailable: http://localhost:8015/api/v1/analytics/adversarial-learning",
+      "Microservice endpoint unavailable: http://localhost:8010/api/v1/publishing/queue",
+      "Microservice endpoint unavailable: http://localhost:8015/api/v1/analytics/optimization-complete",
+      "Microservice endpoint unavailable: http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}}",
+      "Microservice endpoint unavailable: http://localhost:8010/api/v1/content/generate",
+      "Microservice endpoint unavailable: http://localhost:8011/api/v1/detection/analyze",
+      "Microservice endpoint unavailable: http://localhost:8010/api/v1/publishing/queue",
+      "Microservice endpoint unavailable: http://localhost:8015/api/v1/analytics/events",
+      "Microservice endpoint unavailable: http://localhost:8015/api/v1/analytics/events",
+      "Microservice endpoint unavailable: http://localhost:8013/api/v1/config/domains/={{$json[\"domain\"]}}"
+    ],
+    "recommendations": [
+      "Configure NO_PROXY environment variable: export NO_PROXY=localhost,127.0.0.1",
+      "Consider updating proxy settings to allow localhost connections",
+      "Services with missing endpoints: Port 8010 (0/8 endpoints working), Port 8011 (0/2 endpoints working), Port 8013 (0/4 endpoints working), Port 8015 (0/7 endpoints working)",
+      "Check service implementation for missing API endpoints",
+      "Fix RSS feed connectivity: https://feeds.reuters.com/reuters/topNews",
+      "Fix non-functional workflows: monitoring, content_generation",
+      "Prioritize testing FIXED workflow versions as they contain the latest improvements"
+    ],
+    "proxy_issues_detected": true
+  }
+}

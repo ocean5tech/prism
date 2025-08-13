@@ -1,0 +1,660 @@
+{
+  "name": "Main Content Generation Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "feedUrl": "https://feeds.bloomberg.com/markets/news.rss",
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute",
+              "minute": 15
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "rss-monitor",
+      "name": "RSS Monitor",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Domain Classification Logic\nconst domainMappings = {\n  'finance': ['bloomberg', 'reuters', 'wsj', 'marketwatch', 'cnbc'],\n  'sports': ['espn', 'bleacher', 'athletic', 'si', 'cbssports'],\n  'technology': ['techcrunch', 'ars-technica', 'wired', 'theverge', 'engadget']\n};\n\nconst items = $input.all();\nconst processedItems = [];\n\nfor (let item of items) {\n  const feedUrl = item.json.meta.link || '';\n  const title = item.json.title || '';\n  const description = item.json.contentSnippet || item.json.description || '';\n  \n  // Determine domain based on feed URL and content\n  let detectedDomain = 'general';\n  for (const [domain, keywords] of Object.entries(domainMappings)) {\n    if (keywords.some(keyword => \n      feedUrl.toLowerCase().includes(keyword) || \n      title.toLowerCase().includes(keyword) ||\n      description.toLowerCase().includes(keyword)\n    )) {\n      detectedDomain = domain;\n      break;\n    }\n  }\n  \n  // Content analysis for better classification\n  const financeKeywords = ['stock', 'market', 'trading', 'economy', 'financial', 'investment', 'crypto', 'currency'];\n  const sportsKeywords = ['game', 'match', 'player', 'team', 'score', 'season', 'championship', 'tournament'];\n  const techKeywords = ['technology', 'software', 'ai', 'startup', 'app', 'digital', 'innovation', 'coding'];\n  \n  const contentLower = (title + ' ' + description).toLowerCase();\n  \n  if (detectedDomain === 'general') {\n    if (financeKeywords.some(keyword => contentLower.includes(keyword))) {\n      detectedDomain = 'finance';\n    } else if (sportsKeywords.some(keyword => contentLower.includes(keyword))) {\n      detectedDomain = 'sports';\n    } else if (techKeywords.some(keyword => contentLower.includes(keyword))) {\n      detectedDomain = 'technology';\n    }\n  }\n  \n  // Generate unique content ID\n  const contentId = `content_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;\n  \n  processedItems.push({\n    json: {\n      content_id: contentId,\n      domain: detectedDomain,\n      source_title: title,\n      source_description: description,\n      source_url: item.json.link,\n      feed_url: feedUrl,\n      pub_date: item.json.pubDate,\n      priority: detectedDomain !== 'general' ? 'high' : 'medium',\n      processing_timestamp: new Date().toISOString()\n    }\n  });\n}\n\nreturn processedItems;"
+      },
+      "id": "domain-classifier",
+      "name": "Domain Classifier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://config-service:8000/api/v1/config/domains/{{$json[\"domain\"]}}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "load-domain-config",
+      "name": "Load Domain Config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Style Parameter Randomization\nconst items = $input.all();\nconst configData = $('Load Domain Config').all();\nconst processedItems = [];\n\n// Style variation parameters\nconst styleVariations = {\n  tone: ['professional', 'conversational', 'analytical', 'engaging', 'authoritative'],\n  complexity: ['beginner', 'intermediate', 'advanced'],\n  structure: ['listicle', 'analysis', 'news', 'opinion', 'tutorial'],\n  length: ['short', 'medium', 'long'], // 500-800, 800-1500, 1500-2500 words\n  perspective: ['third-person', 'expert-analysis', 'industry-insider']\n};\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n  const config = configData[i] ? configData[i].json : {};\n  \n  // Generate random style parameters within domain constraints\n  const domainConstraints = config.style_parameters || {};\n  const randomizedStyle = {};\n  \n  for (const [param, options] of Object.entries(styleVariations)) {\n    const allowedOptions = domainConstraints[param] || options;\n    randomizedStyle[param] = allowedOptions[Math.floor(Math.random() * allowedOptions.length)];\n  }\n  \n  // Add randomization seed for reproducibility if needed\n  randomizedStyle.seed = Math.random().toString(36).substr(2, 9);\n  \n  // Calculate content length based on style\n  const lengthMapping = {\n    'short': { min: 500, max: 800, target: 650 },\n    'medium': { min: 800, max: 1500, target: 1150 },\n    'long': { min: 1500, max: 2500, target: 2000 }\n  };\n  \n  randomizedStyle.word_count = lengthMapping[randomizedStyle.length];\n  \n  processedItems.push({\n    json: {\n      ...item.json,\n      domain_config: config,\n      style_parameters: randomizedStyle,\n      generation_prompt_template: config.prompt_template || 'default',\n      quality_thresholds: config.quality_thresholds || { minimum_score: 75 }\n    }\n  });\n}\n\nreturn processedItems;"
+      },
+      "id": "style-randomizer",
+      "name": "Style Parameter Randomizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Advanced Prompt Engineering\nconst items = $input.all();\nconst processedItems = [];\n\n// Domain-specific prompt templates\nconst promptTemplates = {\n  finance: `You are an expert financial analyst writing for a professional audience. \n\nTopic: {source_title}\nContext: {source_description}\n\nWrite a {length} {structure} article with a {tone} tone that:\n1. Provides accurate financial analysis based on the source material\n2. Includes relevant market context and implications\n3. Uses appropriate financial terminology\n4. Maintains objectivity and professional standards\n5. Targets {complexity} level readers\n\nStyle Guidelines:\n- Use {perspective} perspective\n- Target word count: {target_words} words\n- Include actionable insights where appropriate\n- Avoid speculative claims without supporting data\n\nPlease write the complete article now.`,\n\n  sports: `You are a sports journalist writing engaging content for sports enthusiasts.\n\nTopic: {source_title}\nContext: {source_description}\n\nWrite a {length} {structure} article with a {tone} tone that:\n1. Captures the excitement and drama of the sports topic\n2. Provides relevant statistics and context\n3. Appeals to {complexity} level sports fans\n4. Uses appropriate sports terminology\n5. Maintains accuracy in facts and figures\n\nStyle Guidelines:\n- Use {perspective} perspective\n- Target word count: {target_words} words\n- Include player/team background where relevant\n- Build narrative tension and engagement\n\nPlease write the complete article now.`,\n\n  technology: `You are a technology expert writing for a tech-savvy audience.\n\nTopic: {source_title}\nContext: {source_description}\n\nWrite a {length} {structure} article with a {tone} tone that:\n1. Explains technical concepts clearly for {complexity} readers\n2. Provides industry context and implications\n3. Uses appropriate technical terminology\n4. Maintains accuracy in technical details\n5. Discusses future implications or trends\n\nStyle Guidelines:\n- Use {perspective} perspective\n- Target word count: {target_words} words\n- Include practical applications where relevant\n- Balance technical depth with accessibility\n\nPlease write the complete article now.`,\n\n  default: `You are a professional content writer creating high-quality articles.\n\nTopic: {source_title}\nContext: {source_description}\n\nWrite a {length} {structure} article with a {tone} tone that:\n1. Thoroughly explores the topic based on the source material\n2. Provides valuable insights and analysis\n3. Targets {complexity} level readers\n4. Maintains professional writing standards\n5. Engages the audience effectively\n\nStyle Guidelines:\n- Use {perspective} perspective\n- Target word count: {target_words} words\n- Include relevant examples and context\n- Ensure content is well-structured and engaging\n\nPlease write the complete article now.`\n};\n\nfor (const item of items) {\n  const data = item.json;\n  const domain = data.domain;\n  const styleParams = data.style_parameters;\n  \n  // Select appropriate prompt template\n  const template = promptTemplates[domain] || promptTemplates.default;\n  \n  // Replace placeholders with actual values\n  let finalPrompt = template\n    .replace(/{source_title}/g, data.source_title)\n    .replace(/{source_description}/g, data.source_description)\n    .replace(/{length}/g, styleParams.length)\n    .replace(/{structure}/g, styleParams.structure)\n    .replace(/{tone}/g, styleParams.tone)\n    .replace(/{complexity}/g, styleParams.complexity)\n    .replace(/{perspective}/g, styleParams.perspective)\n    .replace(/{target_words}/g, styleParams.word_count.target);\n  \n  // Add domain-specific enhancements\n  if (domain === 'finance') {\n    finalPrompt += `\\n\\nAdditional Requirements:\n- Include relevant financial metrics if available\n- Mention regulatory implications if applicable\n- Consider market timing and economic context\n- Use precise financial terminology`;\n  } else if (domain === 'sports') {\n    finalPrompt += `\\n\\nAdditional Requirements:\n- Include recent performance statistics if relevant\n- Mention upcoming games/events if applicable\n- Consider seasonal context and league standings\n- Use sport-specific terminology accurately`;\n  } else if (domain === 'technology') {\n    finalPrompt += `\\n\\nAdditional Requirements:\n- Include technical specifications if relevant\n- Mention competitive landscape if applicable\n- Consider adoption trends and market impact\n- Use current industry terminology`;\n  }\n  \n  processedItems.push({\n    json: {\n      ...data,\n      generation_prompt: finalPrompt,\n      prompt_version: '1.0',\n      estimated_tokens: Math.ceil(finalPrompt.length / 3.5) // Rough token estimate\n    }\n  });\n}\n\nreturn processedItems;"
+      },
+      "id": "prompt-engineer",
+      "name": "Advanced Prompt Engineering",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://content-gen-service:8000/api/v1/content/generate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "X-Request-ID",
+              "value": "{{$json[\"content_id\"]}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content_id",
+              "value": "={{$json[\"content_id\"]}}"
+            },
+            {
+              "name": "domain",
+              "value": "={{$json[\"domain\"]}}"
+            },
+            {
+              "name": "prompt",
+              "value": "={{$json[\"generation_prompt\"]}}"
+            },
+            {
+              "name": "style_parameters",
+              "value": "={{JSON.stringify($json[\"style_parameters\"])}}"
+            },
+            {
+              "name": "source_metadata",
+              "value": "={{JSON.stringify({\n  title: $json[\"source_title\"],\n  description: $json[\"source_description\"],\n  url: $json[\"source_url\"],\n  pub_date: $json[\"pub_date\"]\n})}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 45000
+        }
+      },
+      "id": "content-generator",
+      "name": "Content Generator",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1340,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json[\"success\"]}}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-generation-success",
+      "name": "Check Generation Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://detection-service:8000/api/v1/detection/analyze",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content_id",
+              "value": "={{$json[\"content_id\"]}}"
+            },
+            {
+              "name": "content",
+              "value": "={{$json[\"generated_content\"]}}"
+            },
+            {
+              "name": "domain",
+              "value": "={{$json[\"domain\"]}}"
+            },
+            {
+              "name": "quality_thresholds",
+              "value": "={{JSON.stringify($json[\"quality_thresholds\"])}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "quality-detector",
+      "name": "Quality Detection Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1780,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json[\"quality_score\"]}}",
+              "rightValue": "={{$json[\"quality_thresholds\"][\"minimum_score\"] || 75}}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "quality-gate",
+      "name": "Quality Gate",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://publishing-service:8000/api/v1/publishing/queue",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content_id",
+              "value": "={{$json[\"content_id\"]}}"
+            },
+            {
+              "name": "content",
+              "value": "={{$json[\"generated_content\"]}}"
+            },
+            {
+              "name": "domain",
+              "value": "={{$json[\"domain\"]}}"
+            },
+            {
+              "name": "platforms",
+              "value": "={{JSON.stringify($json[\"domain_config\"][\"publishing_platforms\"] || [\"wordpress\", \"medium\"])}}"
+            },
+            {
+              "name": "schedule_type",
+              "value": "immediate"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "queue-publishing",
+      "name": "Queue for Publishing",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2220,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Regeneration Logic with Feedback Integration\nconst item = $input.first();\nconst qualityData = $('Quality Detection Agent').first();\n\n// Extract feedback and suggestions\nconst feedback = qualityData.json.feedback || {};\nconst suggestions = qualityData.json.suggestions || [];\nconst qualityScore = qualityData.json.quality_score || 0;\n\n// Generate improvement prompt based on feedback\nlet improvementInstructions = '\\n\\nIMPROVEMENT INSTRUCTIONS:\\n';\n\nif (feedback.readability && feedback.readability.score < 70) {\n  improvementInstructions += '- Improve readability: Use shorter sentences and simpler vocabulary\\n';\n}\n\nif (feedback.engagement && feedback.engagement.score < 70) {\n  improvementInstructions += '- Increase engagement: Add more compelling examples and actionable insights\\n';\n}\n\nif (feedback.structure && feedback.structure.score < 70) {\n  improvementInstructions += '- Improve structure: Use better headers, bullet points, and logical flow\\n';\n}\n\nif (feedback.accuracy && feedback.accuracy.score < 80) {\n  improvementInstructions += '- Enhance accuracy: Verify facts and provide more specific details\\n';\n}\n\n// Add specific suggestions\nsuggestions.forEach(suggestion => {\n  improvementInstructions += `- ${suggestion}\\n`;\n});\n\n// Modify the original prompt with improvements\nconst originalPrompt = item.json.generation_prompt;\nconst improvedPrompt = originalPrompt + improvementInstructions + \n  `\\n\\nPrevious attempt scored ${qualityScore}/100. Please address the above issues in your rewrite.`;\n\n// Increment retry count\nconst retryCount = (item.json.retry_count || 0) + 1;\n\nreturn [{\n  json: {\n    ...item.json,\n    generation_prompt: improvedPrompt,\n    retry_count: retryCount,\n    previous_quality_score: qualityScore,\n    improvement_feedback: feedback,\n    regeneration_reason: 'quality_below_threshold'\n  }\n}];"
+      },
+      "id": "regeneration-logic",
+      "name": "Regeneration with Feedback",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2220,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json[\"retry_count\"] || 0}}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "retry-limit-check",
+      "name": "Check Retry Limit",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2440,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://analytics-service:8000/api/v1/analytics/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "content_generation_failed"
+            },
+            {
+              "name": "content_id",
+              "value": "={{$json[\"content_id\"]}}"
+            },
+            {
+              "name": "domain",
+              "value": "={{$json[\"domain\"]}}"
+            },
+            {
+              "name": "failure_reason",
+              "value": "max_retries_exceeded"
+            },
+            {
+              "name": "final_quality_score",
+              "value": "={{$json[\"previous_quality_score\"] || 0}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-failure",
+      "name": "Log Generation Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2660,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://analytics-service:8000/api/v1/analytics/events",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type",
+              "value": "content_generation_success"
+            },
+            {
+              "name": "content_id",
+              "value": "={{$json[\"content_id\"]}}"
+            },
+            {
+              "name": "domain",
+              "value": "={{$json[\"domain\"]}}"
+            },
+            {
+              "name": "quality_score",
+              "value": "={{$json[\"quality_score\"]}}"
+            },
+            {
+              "name": "word_count",
+              "value": "={{$json[\"word_count\"] || 0}}"
+            },
+            {
+              "name": "generation_time_ms",
+              "value": "={{$json[\"generation_time_ms\"] || 0}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-success",
+      "name": "Log Generation Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        2440,
+        180
+      ]
+    }
+  ],
+  "connections": {
+    "RSS Monitor": {
+      "main": [
+        [
+          {
+            "node": "Domain Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Domain Classifier": {
+      "main": [
+        [
+          {
+            "node": "Load Domain Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Domain Config": {
+      "main": [
+        [
+          {
+            "node": "Style Parameter Randomizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Style Parameter Randomizer": {
+      "main": [
+        [
+          {
+            "node": "Advanced Prompt Engineering",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Advanced Prompt Engineering": {
+      "main": [
+        [
+          {
+            "node": "Content Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Generator": {
+      "main": [
+        [
+          {
+            "node": "Check Generation Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Generation Success": {
+      "main": [
+        [
+          {
+            "node": "Quality Detection Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Generation Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Detection Agent": {
+      "main": [
+        [
+          {
+            "node": "Quality Gate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Gate": {
+      "main": [
+        [
+          {
+            "node": "Queue for Publishing",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Generation Success",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Regeneration with Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Regeneration with Feedback": {
+      "main": [
+        [
+          {
+            "node": "Check Retry Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Retry Limit": {
+      "main": [
+        [
+          {
+            "node": "Content Generator",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Generation Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-08T10:00:00.000Z",
+      "updatedAt": "2025-08-08T10:00:00.000Z",
+      "id": "content-generation",
+      "name": "content-generation"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-08T10:00:00.000Z",
+  "versionId": "v1.0.0"
+}

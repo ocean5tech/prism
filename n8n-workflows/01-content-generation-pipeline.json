@@ -1,0 +1,482 @@
+{
+  "name": "Content Generation Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute",
+              "minute": 5
+            }
+          ]
+        },
+        "feedUrl": "={{ $json.rss_url }}",
+        "options": {}
+      },
+      "name": "RSS Feed Monitor",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "position": [240, 300],
+      "id": "rss-monitor",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://configuration-service:8000/api/v1/domains/classify",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type", 
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "={{ $json.title }}"
+            },
+            {
+              "name": "content",
+              "value": "={{ $json.content }}"
+            },
+            {
+              "name": "url",
+              "value": "={{ $json.link }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "retry": {
+            "enabled": true,
+            "maxRetries": 3,
+            "waitBetweenTries": 2000
+          }
+        }
+      },
+      "name": "Domain Classification",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [460, 300],
+      "id": "domain-classify",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.domain }}",
+              "operation": "equal",
+              "value2": "finance"
+            }
+          ]
+        }
+      },
+      "name": "Finance Route",
+      "type": "n8n-nodes-base.if",
+      "position": [680, 200],
+      "id": "finance-route",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.domain }}",
+              "operation": "equal", 
+              "value2": "sports"
+            }
+          ]
+        }
+      },
+      "name": "Sports Route",
+      "type": "n8n-nodes-base.if",
+      "position": [680, 300],
+      "id": "sports-route",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.domain }}",
+              "operation": "equal",
+              "value2": "technology"
+            }
+          ]
+        }
+      },
+      "name": "Technology Route",
+      "type": "n8n-nodes-base.if",
+      "position": [680, 400],
+      "id": "tech-route", 
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://content-generation-service:8000/api/v1/content/generate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "domain",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "source_content",
+              "value": "={{ $json.content }}"
+            },
+            {
+              "name": "style_params",
+              "value": "={{ $json.style_config }}"
+            },
+            {
+              "name": "target_length",
+              "value": "1000"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000,
+          "retry": {
+            "enabled": true,
+            "maxRetries": 2,
+            "waitBetweenTries": 5000
+          }
+        }
+      },
+      "name": "Content Generation",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [900, 300],
+      "id": "content-generate",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://detection-service:8000/api/v1/quality/analyze",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization", 
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "={{ $json.generated_content }}"
+            },
+            {
+              "name": "domain",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "original_source",
+              "value": "={{ $json.source_url }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000,
+          "retry": {
+            "enabled": true,
+            "maxRetries": 3,
+            "waitBetweenTries": 2000
+          }
+        }
+      },
+      "name": "Quality Detection", 
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1120, 300],
+      "id": "quality-detect",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.quality_score }}",
+              "operation": "larger",
+              "value2": 0.85
+            }
+          ]
+        }
+      },
+      "name": "Quality Gate",
+      "type": "n8n-nodes-base.if",
+      "position": [1340, 300],
+      "id": "quality-gate",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://publishing-service:8000/api/v1/publish/multi-platform",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "={{ $json.generated_content }}"
+            },
+            {
+              "name": "domain",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "platforms",
+              "value": "={{ $json.target_platforms }}"
+            },
+            {
+              "name": "metadata",
+              "value": "={{ $json.content_metadata }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000,
+          "retry": {
+            "enabled": true,
+            "maxRetries": 3,
+            "waitBetweenTries": 5000
+          }
+        }
+      },
+      "name": "Multi-Platform Publishing",
+      "type": "n8n-nodes-base.httpRequest", 
+      "position": [1560, 200],
+      "id": "publish-content",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "workflowId": "content-regeneration-workflow",
+        "waitForSubWorkflow": false,
+        "passData": true
+      },
+      "name": "Regenerate Content",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "position": [1560, 400],
+      "id": "regenerate-workflow", 
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "url": "http://analytics-service:8000/api/v1/metrics/record",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.API_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "event_type", 
+              "value": "content_published"
+            },
+            {
+              "name": "domain",
+              "value": "={{ $json.domain }}"
+            },
+            {
+              "name": "quality_score",
+              "value": "={{ $json.quality_score }}"
+            },
+            {
+              "name": "processing_time",
+              "value": "={{ $json.processing_time }}"
+            }
+          ]
+        }
+      },
+      "name": "Record Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [1780, 200],
+      "id": "record-metrics",
+      "typeVersion": 1
+    }
+  ],
+  "connections": {
+    "RSS Feed Monitor": {
+      "main": [
+        [
+          {
+            "node": "Domain Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Domain Classification": {
+      "main": [
+        [
+          {
+            "node": "Finance Route", 
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Sports Route",
+            "type": "main", 
+            "index": 0
+          },
+          {
+            "node": "Technology Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Finance Route": {
+      "main": [
+        [
+          {
+            "node": "Content Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sports Route": {
+      "main": [
+        [
+          {
+            "node": "Content Generation", 
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Technology Route": {
+      "main": [
+        [
+          {
+            "node": "Content Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Content Generation": {
+      "main": [
+        [
+          {
+            "node": "Quality Detection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Detection": {
+      "main": [
+        [
+          {
+            "node": "Quality Gate",
+            "type": "main", 
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quality Gate": {
+      "main": [
+        [
+          {
+            "node": "Multi-Platform Publishing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Regenerate Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Multi-Platform Publishing": {
+      "main": [
+        [
+          {
+            "node": "Record Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionTimeout": 300,
+    "maxExecutionTimeout": 600,
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "error-handler-workflow"
+  },
+  "staticData": {},
+  "tags": ["content-generation", "main-pipeline"],
+  "triggerCount": 1,
+  "updatedAt": "2025-08-08T10:00:00.000Z",
+  "versionId": "1.0.0"
+}

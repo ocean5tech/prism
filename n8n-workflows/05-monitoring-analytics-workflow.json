@@ -1,0 +1,620 @@
+{
+  "name": "Monitoring and Analytics Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "monitoring-trigger",
+      "name": "Monitoring Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://analytics-service:8000/api/v1/analytics/system-status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "collect-system-metrics",
+      "name": "Collect System Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://analytics-service:8000/api/v1/analytics/content-performance",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "collect-content-metrics",
+      "name": "Collect Content Performance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://analytics-service:8000/api/v1/analytics/platform-performance",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "collect-platform-metrics",
+      "name": "Collect Platform Performance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Comprehensive Analytics Data Processing and Alert Generation\nconst systemMetrics = $('Collect System Metrics').first()?.json || {};\nconst contentMetrics = $('Collect Content Performance').first()?.json || {};\nconst platformMetrics = $('Collect Platform Performance').first()?.json || {};\n\nconst timestamp = new Date().toISOString();\n\n// Process system performance metrics\nconst systemHealth = {\n  overall_status: systemMetrics.status || 'unknown',\n  services: {\n    content_generation: systemMetrics.services?.content_gen || 'unknown',\n    detection_service: systemMetrics.services?.detection || 'unknown',\n    publishing_service: systemMetrics.services?.publishing || 'unknown',\n    config_service: systemMetrics.services?.config || 'unknown',\n    analytics_service: systemMetrics.services?.analytics || 'unknown'\n  },\n  performance: {\n    avg_response_time: systemMetrics.avg_response_time || 0,\n    error_rate: systemMetrics.error_rate || 0,\n    throughput: systemMetrics.requests_per_minute || 0,\n    memory_usage: systemMetrics.memory_usage_percent || 0,\n    cpu_usage: systemMetrics.cpu_usage_percent || 0\n  }\n};\n\n// Process content generation metrics\nconst contentHealth = {\n  generation_stats: {\n    total_generated_today: contentMetrics.daily_generation_count || 0,\n    success_rate: contentMetrics.generation_success_rate || 0,\n    avg_quality_score: contentMetrics.avg_quality_score || 0,\n    avg_generation_time: contentMetrics.avg_generation_time_seconds || 0\n  },\n  domain_breakdown: contentMetrics.domain_stats || {},\n  quality_trends: {\n    quality_improving: (contentMetrics.quality_trend || 0) > 0,\n    trend_percentage: contentMetrics.quality_trend || 0,\n    below_threshold_count: contentMetrics.below_threshold_count || 0\n  }\n};\n\n// Process publishing performance metrics\nconst publishingHealth = {\n  publishing_stats: {\n    total_published_today: platformMetrics.daily_publish_count || 0,\n    success_rate: platformMetrics.publishing_success_rate || 0,\n    avg_publishing_delay: platformMetrics.avg_publishing_delay_minutes || 0,\n    failed_publications: platformMetrics.failed_publications || 0\n  },\n  platform_breakdown: platformMetrics.platform_stats || {},\n  optimal_timing: {\n    optimal_posts_percentage: platformMetrics.optimal_timing_percentage || 0,\n    timing_effectiveness: platformMetrics.timing_effectiveness_score || 0\n  }\n};\n\n// Generate alerts based on thresholds\nconst alerts = [];\n\n// System health alerts\nif (systemHealth.performance.error_rate > 5) {\n  alerts.push({\n    type: 'critical',\n    category: 'system_health',\n    message: `High error rate detected: ${systemHealth.performance.error_rate}%`,\n    threshold: 5,\n    current_value: systemHealth.performance.error_rate,\n    recommendation: 'Investigate service errors and restart failing components'\n  });\n}\n\nif (systemHealth.performance.avg_response_time > 2000) {\n  alerts.push({\n    type: 'warning',\n    category: 'performance',\n    message: `Slow response times: ${systemHealth.performance.avg_response_time}ms`,\n    threshold: 2000,\n    current_value: systemHealth.performance.avg_response_time,\n    recommendation: 'Scale up services or optimize database queries'\n  });\n}\n\nif (systemHealth.performance.memory_usage > 85 || systemHealth.performance.cpu_usage > 85) {\n  alerts.push({\n    type: 'warning',\n    category: 'resource_usage',\n    message: `High resource usage - Memory: ${systemHealth.performance.memory_usage}%, CPU: ${systemHealth.performance.cpu_usage}%`,\n    threshold: 85,\n    recommendation: 'Consider scaling infrastructure or optimizing resource usage'\n  });\n}\n\n// Content generation alerts\nif (contentHealth.generation_stats.success_rate < 95) {\n  alerts.push({\n    type: 'warning',\n    category: 'content_generation',\n    message: `Low content generation success rate: ${contentHealth.generation_stats.success_rate}%`,\n    threshold: 95,\n    current_value: contentHealth.generation_stats.success_rate,\n    recommendation: 'Check Claude API status and generation service health'\n  });\n}\n\nif (contentHealth.generation_stats.avg_quality_score < 75) {\n  alerts.push({\n    type: 'warning',\n    category: 'content_quality',\n    message: `Low average quality score: ${contentHealth.generation_stats.avg_quality_score}`,\n    threshold: 75,\n    current_value: contentHealth.generation_stats.avg_quality_score,\n    recommendation: 'Review and optimize content generation prompts and parameters'\n  });\n}\n\nif (contentHealth.quality_trends.below_threshold_count > 10) {\n  alerts.push({\n    type: 'warning',\n    category: 'quality_trend',\n    message: `High number of below-threshold content: ${contentHealth.quality_trends.below_threshold_count} items`,\n    threshold: 10,\n    current_value: contentHealth.quality_trends.below_threshold_count,\n    recommendation: 'Investigate detection agent calibration and generation parameters'\n  });\n}\n\n// Publishing performance alerts\nif (publishingHealth.publishing_stats.success_rate < 98) {\n  alerts.push({\n    type: 'warning',\n    category: 'publishing',\n    message: `Low publishing success rate: ${publishingHealth.publishing_stats.success_rate}%`,\n    threshold: 98,\n    current_value: publishingHealth.publishing_stats.success_rate,\n    recommendation: 'Check platform API credentials and service integrations'\n  });\n}\n\nif (publishingHealth.publishing_stats.avg_publishing_delay > 30) {\n  alerts.push({\n    type: 'info',\n    category: 'publishing_delay',\n    message: `High publishing delays: ${publishingHealth.publishing_stats.avg_publishing_delay} minutes`,\n    threshold: 30,\n    current_value: publishingHealth.publishing_stats.avg_publishing_delay,\n    recommendation: 'Review publishing schedule optimization and platform response times'\n  });\n}\n\n// Calculate overall system score\nconst systemScore = Math.min(100, (\n  (systemHealth.performance.error_rate < 2 ? 25 : systemHealth.performance.error_rate < 5 ? 15 : 0) +\n  (systemHealth.performance.avg_response_time < 500 ? 25 : systemHealth.performance.avg_response_time < 2000 ? 15 : 0) +\n  (contentHealth.generation_stats.success_rate > 98 ? 25 : contentHealth.generation_stats.success_rate > 95 ? 15 : 0) +\n  (publishingHealth.publishing_stats.success_rate > 99 ? 25 : publishingHealth.publishing_stats.success_rate > 95 ? 15 : 0)\n));\n\n// Generate recommendations for optimization\nconst optimizationRecommendations = [];\n\nif (contentHealth.generation_stats.avg_generation_time > 25) {\n  optimizationRecommendations.push({\n    category: 'performance',\n    priority: 'medium',\n    recommendation: 'Optimize content generation prompts to reduce processing time',\n    estimated_impact: 'Reduce generation time by 20-30%'\n  });\n}\n\nif (publishingHealth.optimal_timing.optimal_posts_percentage < 80) {\n  optimizationRecommendations.push({\n    category: 'publishing',\n    priority: 'low',\n    recommendation: 'Improve publishing schedule optimization algorithms',\n    estimated_impact: 'Increase engagement by 10-15%'\n  });\n}\n\nif (contentHealth.quality_trends.trend_percentage < -5) {\n  optimizationRecommendations.push({\n    category: 'quality',\n    priority: 'high',\n    recommendation: 'Review and retrain detection agent with recent high-quality examples',\n    estimated_impact: 'Improve quality trend and reduce manual review'\n  });\n}\n\n// Prepare monitoring report\nconst monitoringReport = {\n  timestamp: timestamp,\n  system_score: systemScore,\n  system_health: systemHealth,\n  content_health: contentHealth,\n  publishing_health: publishingHealth,\n  alerts: alerts,\n  alert_count: {\n    critical: alerts.filter(a => a.type === 'critical').length,\n    warning: alerts.filter(a => a.type === 'warning').length,\n    info: alerts.filter(a => a.type === 'info').length\n  },\n  optimization_recommendations: optimizationRecommendations,\n  summary: {\n    overall_status: systemScore >= 80 ? 'healthy' : systemScore >= 60 ? 'warning' : 'critical',\n    key_metrics: {\n      daily_content_generated: contentHealth.generation_stats.total_generated_today,\n      daily_content_published: publishingHealth.publishing_stats.total_published_today,\n      avg_quality_score: contentHealth.generation_stats.avg_quality_score,\n      system_availability: 100 - systemHealth.performance.error_rate\n    }\n  }\n};\n\nreturn [{\n  json: monitoringReport\n}];"
+      },
+      "id": "analytics-processor",
+      "name": "Analytics Data Processor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{$json[\"alert_count\"][\"critical\"] + $json[\"alert_count\"][\"warning\"]}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "alert-check",
+      "name": "Has Alerts?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        900,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Advanced Alert Management and Notification System\nconst monitoringData = $input.first().json;\nconst alerts = monitoringData.alerts || [];\n\n// Categorize alerts by severity and type\nconst alertCategories = {\n  critical: alerts.filter(a => a.type === 'critical'),\n  warning: alerts.filter(a => a.type === 'warning'),\n  info: alerts.filter(a => a.type === 'info')\n};\n\n// Generate notification messages for different channels\nconst notifications = [];\n\n// Critical alerts - immediate notification\nif (alertCategories.critical.length > 0) {\n  const criticalMessage = {\n    channel: 'slack_critical',\n    priority: 'immediate',\n    title: '🚨 CRITICAL ALERT - Immediate Action Required',\n    message: `${alertCategories.critical.length} critical issue(s) detected:\\n\\n` +\n             alertCategories.critical.map(alert => \n               `• ${alert.message}\\n  Recommendation: ${alert.recommendation}`\n             ).join('\\n\\n'),\n    timestamp: monitoringData.timestamp,\n    alert_count: alertCategories.critical.length\n  };\n  \n  notifications.push(criticalMessage);\n  \n  // Also send email for critical alerts\n  notifications.push({\n    channel: 'email_critical',\n    priority: 'immediate',\n    subject: 'CRITICAL: Prism Content Factory System Alert',\n    body: `Critical system issues detected at ${new Date(monitoringData.timestamp).toLocaleString()}:\\n\\n` +\n          criticalMessage.message +\n          `\\n\\nSystem Score: ${monitoringData.system_score}/100\\n\\n` +\n          'Please investigate immediately.'\n  });\n}\n\n// Warning alerts - regular notification\nif (alertCategories.warning.length > 0) {\n  notifications.push({\n    channel: 'slack_general',\n    priority: 'normal',\n    title: '⚠️ System Warnings Detected',\n    message: `${alertCategories.warning.length} warning(s) require attention:\\n\\n` +\n             alertCategories.warning.map(alert => \n               `• ${alert.message}\\n  Recommendation: ${alert.recommendation}`\n             ).join('\\n\\n'),\n    timestamp: monitoringData.timestamp,\n    alert_count: alertCategories.warning.length\n  });\n}\n\n// Info alerts - summary notification\nif (alertCategories.info.length > 0) {\n  notifications.push({\n    channel: 'slack_general',\n    priority: 'low',\n    title: '💡 System Information',\n    message: `${alertCategories.info.length} informational alert(s):\\n\\n` +\n             alertCategories.info.map(alert => alert.message).join('\\n'),\n    timestamp: monitoringData.timestamp\n  });\n}\n\n// Generate dashboard update data\nconst dashboardUpdate = {\n  timestamp: monitoringData.timestamp,\n  system_score: monitoringData.system_score,\n  status: monitoringData.summary.overall_status,\n  key_metrics: monitoringData.summary.key_metrics,\n  active_alerts: alerts.length,\n  performance_trends: {\n    content_generation_trend: monitoringData.content_health.quality_trends.trend_percentage,\n    publishing_success_trend: monitoringData.publishing_health.publishing_stats.success_rate,\n    system_performance_trend: 100 - monitoringData.system_health.performance.error_rate\n  },\n  recommendations: monitoringData.optimization_recommendations.filter(r => r.priority === 'high')\n};\n\n// Auto-remediation triggers\nconst autoRemediation = [];\n\n// Auto-restart services with high error rates\nif (monitoringData.system_health.performance.error_rate > 10) {\n  autoRemediation.push({\n    action: 'restart_services',\n    target: 'failing_services',\n    trigger: 'high_error_rate',\n    automated: true\n  });\n}\n\n// Auto-scale if resource usage is high\nif (monitoringData.system_health.performance.memory_usage > 90 || \n    monitoringData.system_health.performance.cpu_usage > 90) {\n  autoRemediation.push({\n    action: 'scale_up',\n    target: 'microservices',\n    trigger: 'high_resource_usage',\n    automated: true\n  });\n}\n\n// Auto-adjust generation frequency if quality drops\nif (monitoringData.content_health.generation_stats.avg_quality_score < 70) {\n  autoRemediation.push({\n    action: 'reduce_generation_frequency',\n    target: 'content_pipeline',\n    trigger: 'low_quality_score',\n    automated: true\n  });\n}\n\nreturn [{\n  json: {\n    notifications: notifications,\n    dashboard_update: dashboardUpdate,\n    auto_remediation: autoRemediation,\n    alert_summary: {\n      total_alerts: alerts.length,\n      critical: alertCategories.critical.length,\n      warning: alertCategories.warning.length,\n      info: alertCategories.info.length\n    },\n    monitoring_data: monitoringData\n  }\n}];"
+      },
+      "id": "alert-manager",
+      "name": "Alert Management System",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://notification-service:8000/api/v1/notifications/send-alerts",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "notifications",
+              "value": "={{JSON.stringify($json[\"notifications\"])}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "send-notifications",
+      "name": "Send Alert Notifications",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1340,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Auto-remediation execution logic\nconst item = $input.first();\nconst remediationActions = item.json.auto_remediation || [];\n\nconst executedActions = [];\nconst failedActions = [];\n\nfor (const action of remediationActions) {\n  try {\n    // Simulate auto-remediation execution\n    // In real implementation, these would make actual API calls\n    \n    switch (action.action) {\n      case 'restart_services':\n        // Would call Kubernetes or Docker API to restart failing services\n        executedActions.push({\n          ...action,\n          status: 'executed',\n          execution_time: new Date().toISOString(),\n          result: 'Services restarted successfully'\n        });\n        break;\n        \n      case 'scale_up':\n        // Would call infrastructure API to scale up resources\n        executedActions.push({\n          ...action,\n          status: 'executed',\n          execution_time: new Date().toISOString(),\n          result: 'Resources scaled up by 50%'\n        });\n        break;\n        \n      case 'reduce_generation_frequency':\n        // Would update workflow configurations to reduce frequency\n        executedActions.push({\n          ...action,\n          status: 'executed',\n          execution_time: new Date().toISOString(),\n          result: 'Generation frequency reduced by 25%'\n        });\n        break;\n        \n      default:\n        failedActions.push({\n          ...action,\n          status: 'failed',\n          error: 'Unknown remediation action'\n        });\n    }\n  } catch (error) {\n    failedActions.push({\n      ...action,\n      status: 'failed',\n      error: error.message\n    });\n  }\n}\n\nreturn [{\n  json: {\n    ...item.json,\n    remediation_results: {\n      executed_actions: executedActions,\n      failed_actions: failedActions,\n      total_actions: remediationActions.length,\n      success_rate: remediationActions.length > 0 ? \n        (executedActions.length / remediationActions.length) * 100 : 100\n    }\n  }\n}];"
+      },
+      "id": "auto-remediation",
+      "name": "Auto-remediation Executor",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://analytics-service:8000/api/v1/analytics/dashboard-update",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "dashboard_data",
+              "value": "={{JSON.stringify($json[\"dashboard_update\"])}}"
+            },
+            {
+              "name": "alert_summary",
+              "value": "={{JSON.stringify($json[\"alert_summary\"])}}"
+            },
+            {
+              "name": "remediation_results",
+              "value": "={{JSON.stringify($json[\"remediation_results\"])}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "update-dashboard",
+      "name": "Update Analytics Dashboard",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1560,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://analytics-service:8000/api/v1/analytics/monitoring-log",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "monitoring_data",
+              "value": "={{JSON.stringify($json[\"monitoring_data\"])}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "store-monitoring-data",
+      "name": "Store Monitoring Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "daily-report-trigger",
+      "name": "Daily Report Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        240,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Comprehensive daily report generation\nconst timestamp = new Date().toISOString();\nconst yesterday = new Date();\nyesterday.setDate(yesterday.getDate() - 1);\n\n// This would normally fetch actual data from the analytics service\n// For demonstration, we'll simulate the report structure\n\nconst dailyReport = {\n  report_date: yesterday.toISOString().split('T')[0],\n  generated_at: timestamp,\n  \n  executive_summary: {\n    total_articles_generated: 450, // Would fetch from analytics\n    total_articles_published: 425,\n    avg_quality_score: 82.5,\n    system_uptime_percentage: 99.8,\n    total_cost: 22.50,\n    revenue_generated: 180.00 // If applicable\n  },\n  \n  domain_performance: {\n    finance: {\n      articles_generated: 180,\n      articles_published: 175,\n      avg_quality_score: 85.2,\n      engagement_score: 78.5,\n      cost: 9.00\n    },\n    sports: {\n      articles_generated: 150,\n      articles_published: 145,\n      avg_quality_score: 81.8,\n      engagement_score: 85.2,\n      cost: 7.50\n    },\n    technology: {\n      articles_generated: 120,\n      articles_published: 105,\n      avg_quality_score: 80.1,\n      engagement_score: 74.8,\n      cost: 6.00\n    }\n  },\n  \n  platform_performance: {\n    wordpress: {\n      publications: 180,\n      success_rate: 99.4,\n      avg_engagement: 75.2\n    },\n    medium: {\n      publications: 120,\n      success_rate: 98.3,\n      avg_engagement: 68.5\n    },\n    linkedin: {\n      publications: 85,\n      success_rate: 97.6,\n      avg_engagement: 82.1\n    },\n    twitter: {\n      publications: 40,\n      success_rate: 100.0,\n      avg_engagement: 91.3\n    }\n  },\n  \n  quality_metrics: {\n    articles_above_threshold: 410,\n    articles_requiring_regeneration: 15,\n    avg_adversarial_improvements: 8.2,\n    detection_accuracy: 94.8\n  },\n  \n  operational_metrics: {\n    avg_generation_time: 18.5,\n    avg_publishing_delay: 12.3,\n    system_alerts: {\n      critical: 0,\n      warning: 3,\n      info: 12\n    },\n    auto_remediation_actions: 2\n  },\n  \n  cost_analysis: {\n    claude_api_costs: 18.75,\n    infrastructure_costs: 3.75,\n    total_operational_cost: 22.50,\n    cost_per_article: 0.05,\n    projected_monthly_cost: 675.00\n  },\n  \n  recommendations: [\n    {\n      category: 'performance',\n      priority: 'medium',\n      recommendation: 'Optimize technology domain prompts to improve quality scores',\n      estimated_impact: 'Increase avg quality by 3-5 points'\n    },\n    {\n      category: 'cost',\n      priority: 'low',\n      recommendation: 'Consider implementing more aggressive content caching',\n      estimated_impact: 'Reduce API costs by 10-15%'\n    },\n    {\n      category: 'engagement',\n      priority: 'high',\n      recommendation: 'Analyze high-performing Twitter content patterns for other platforms',\n      estimated_impact: 'Improve overall engagement by 8-12%'\n    }\n  ],\n  \n  trends_analysis: {\n    quality_trend: 'improving',\n    volume_trend: 'stable',\n    cost_trend: 'stable',\n    engagement_trend: 'improving'\n  },\n  \n  next_day_forecast: {\n    estimated_articles: 465,\n    estimated_cost: 23.25,\n    expected_quality_score: 83.1,\n    capacity_utilization: 76.2\n  }\n};\n\nreturn [{\n  json: dailyReport\n}];"
+      },
+      "id": "generate-daily-report",
+      "name": "Generate Daily Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://analytics-service:8000/api/v1/analytics/daily-report",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "daily_report",
+              "value": "={{JSON.stringify($json)}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "store-daily-report",
+      "name": "Store Daily Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        680,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://notification-service:8000/api/v1/notifications/daily-report",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{$credentials.prism_api_token}}"
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "report_data",
+              "value": "={{JSON.stringify($json)}}"
+            },
+            {
+              "name": "recipients",
+              "value": "[\"admin@prism.com\", \"analytics@prism.com\"]"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "id": "send-daily-report",
+      "name": "Send Daily Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        900,
+        600
+      ]
+    }
+  ],
+  "connections": {
+    "Monitoring Trigger": {
+      "main": [
+        [
+          {
+            "node": "Collect System Metrics",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Collect Content Performance",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Collect Platform Performance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect System Metrics": {
+      "main": [
+        [
+          {
+            "node": "Analytics Data Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Content Performance": {
+      "main": [
+        [
+          {
+            "node": "Analytics Data Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Platform Performance": {
+      "main": [
+        [
+          {
+            "node": "Analytics Data Processor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analytics Data Processor": {
+      "main": [
+        [
+          {
+            "node": "Has Alerts?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Store Monitoring Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Alerts?": {
+      "main": [
+        [
+          {
+            "node": "Alert Management System",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Store Monitoring Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Alert Management System": {
+      "main": [
+        [
+          {
+            "node": "Send Alert Notifications",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Auto-remediation Executor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Auto-remediation Executor": {
+      "main": [
+        [
+          {
+            "node": "Update Analytics Dashboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Report Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate Daily Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Daily Report": {
+      "main": [
+        [
+          {
+            "node": "Store Daily Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Daily Report": {
+      "main": [
+        [
+          {
+            "node": "Send Daily Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-08-08T10:00:00.000Z",
+      "updatedAt": "2025-08-08T10:00:00.000Z",
+      "id": "monitoring-analytics",
+      "name": "monitoring-analytics"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-08T10:00:00.000Z",
+  "versionId": "v1.0.0"
+}

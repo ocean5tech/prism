@@ -1,0 +1,264 @@
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n-content-factory
+    restart: unless-stopped
+    environment:
+      # Basic Configuration
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      
+      # Authentication
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
+      
+      # Database Configuration (PostgreSQL)
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      
+      # Webhook Configuration
+      - WEBHOOK_URL=http://localhost:5678
+      - N8N_PAYLOAD_SIZE_MAX=16777216
+      
+      # Execution Configuration
+      - EXECUTIONS_TIMEOUT=3600
+      - EXECUTIONS_TIMEOUT_MAX=7200
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
+      
+      # Security Configuration
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_USER_MANAGEMENT_JWT_SECRET=${JWT_SECRET}
+      
+      # Service Integration
+      - API_TOKEN=${API_TOKEN}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - CONTENT_SERVICE_URL=http://content-generation-service:8000
+      - DETECTION_SERVICE_URL=http://detection-service:8000
+      - CONFIG_SERVICE_URL=http://configuration-service:8000
+      - PUBLISHING_SERVICE_URL=http://publishing-service:8000
+      - ANALYTICS_SERVICE_URL=http://analytics-service:8000
+      
+      # Performance Configuration
+      - N8N_CONCURRENCY_PRODUCTION=10
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+      - N8N_BINARY_DATA_TTL=24
+      
+      # Logging Configuration  
+      - N8N_LOG_LEVEL=info
+      - N8N_LOG_OUTPUT=console,file
+      - N8N_LOG_FILE_COUNT_MAX=100
+      - N8N_LOG_FILE_SIZE_MAX=16777216
+      
+    ports:
+      - "5678:5678"
+    
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/home/node/.n8n/workflows
+      - ./custom-nodes:/home/node/.n8n/nodes
+      - n8n_logs:/home/node/.n8n/logs
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    
+    networks:
+      - content-factory-network
+      
+    depends_on:
+      - postgres
+      - redis
+    
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: n8n-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-n8n}
+      - POSTGRES_USER=${POSTGRES_USER:-n8n}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_NON_ROOT_USER=n8n_user
+      - POSTGRES_NON_ROOT_PASSWORD=${POSTGRES_PASSWORD}
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    
+    networks:
+      - content-factory-network
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-n8n} -d ${POSTGRES_DB:-n8n}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: n8n-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    
+    volumes:
+      - redis_data:/data
+    
+    networks:
+      - content-factory-network
+    
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Workflow monitoring and metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: n8n-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    
+    ports:
+      - "9090:9090"
+    
+    networks:
+      - content-factory-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: n8n-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    
+    ports:
+      - "3000:3000"
+    
+    networks:
+      - content-factory-network
+    
+    depends_on:
+      - prometheus
+
+  # Log aggregation
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.8.0
+    container_name: n8n-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    
+    ports:
+      - "9200:9200"
+    
+    networks:
+      - content-factory-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.8.0
+    container_name: n8n-kibana
+    restart: unless-stopped
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    
+    ports:
+      - "5601:5601"
+    
+    networks:
+      - content-factory-network
+    
+    depends_on:
+      - elasticsearch
+
+  # Workflow backup and restore
+  backup-service:
+    image: alpine:latest
+    container_name: n8n-backup
+    restart: unless-stopped
+    environment:
+      - BACKUP_SCHEDULE=${BACKUP_SCHEDULE:-0 2 * * *}  # Daily at 2 AM
+      - POSTGRES_DB=${POSTGRES_DB:-n8n}
+      - POSTGRES_USER=${POSTGRES_USER:-n8n}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - S3_BUCKET=${BACKUP_S3_BUCKET}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    
+    volumes:
+      - n8n_data:/backup/n8n_data:ro
+      - postgres_data:/backup/postgres_data:ro
+      - ./backup-scripts:/scripts
+    
+    networks:
+      - content-factory-network
+    
+    command: |
+      sh -c "
+        apk add --no-cache postgresql-client aws-cli cronie
+        crontab -l | { cat; echo '${BACKUP_SCHEDULE:-0 2 * * *} /scripts/backup.sh'; } | crontab -
+        crond -f
+      "
+    
+    depends_on:
+      - postgres
+
+volumes:
+  n8n_data:
+    driver: local
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
+  n8n_logs:
+    driver: local
+
+networks:
+  content-factory-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

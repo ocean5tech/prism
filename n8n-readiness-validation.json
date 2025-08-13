@@ -1,0 +1,118 @@
+{
+  "timestamp": "2025-08-12T15:37:42.852851",
+  "services": {
+    "8010": {
+      "service_name": "Content Generation Service",
+      "port": 8010,
+      "healthy": false,
+      "endpoints_tested": [
+        "/openapi.json"
+      ],
+      "working_endpoints": [],
+      "issues": [
+        "/openapi.json: HTTP 403"
+      ]
+    },
+    "8011": {
+      "service_name": "Detection/Quality Analysis Service",
+      "port": 8011,
+      "healthy": false,
+      "endpoints_tested": [],
+      "working_endpoints": [],
+      "issues": []
+    },
+    "8013": {
+      "service_name": "Configuration Management Service",
+      "port": 8013,
+      "healthy": false,
+      "endpoints_tested": [],
+      "working_endpoints": [],
+      "issues": []
+    },
+    "8015": {
+      "service_name": "Analytics Service",
+      "port": 8015,
+      "healthy": false,
+      "endpoints_tested": [],
+      "working_endpoints": [],
+      "issues": []
+    }
+  },
+  "rss_feeds": {
+    "Bloomberg Markets": {
+      "name": "Bloomberg Markets",
+      "url": "https://feeds.bloomberg.com/markets/news.rss",
+      "accessible": true,
+      "items": 30,
+      "title": "Bloomberg Markets",
+      "error": null
+    },
+    "Reuters Top News": {
+      "name": "Reuters Top News",
+      "url": "https://feeds.reuters.com/reuters/topNews",
+      "accessible": false,
+      "items": 0,
+      "title": "",
+      "error": "HTTPSConnectionPool(host='feeds.reuters.com', port=443): Max retries exceeded with url: /reuters/topNews (Caused by ProxyError('Unable to connect to proxy', OSError('Tunnel connection failed: 503 Service Unavailable')))"
+    }
+  },
+  "workflow_readiness": {
+    "01-main-content-generation-pipeline-FIXED": {
+      "description": "Main content generation with RSS monitoring",
+      "status": "blocked",
+      "available_endpoints": [],
+      "missing_endpoints": [
+        "/api/v1/content/generate",
+        "/api/v1/detection/analyze",
+        "/api/v1/config/domains/",
+        "/api/v1/analytics/events"
+      ],
+      "rss_status": "ok",
+      "readiness_score": 0.0,
+      "can_test": false,
+      "limitations": []
+    },
+    "02-adversarial-quality-optimization-FIXED": {
+      "description": "Content quality improvement through adversarial feedback",
+      "status": "blocked",
+      "available_endpoints": [],
+      "missing_endpoints": [
+        "/api/v1/content/regenerate",
+        "/api/v1/analytics/adversarial-learning"
+      ],
+      "rss_status": "ok",
+      "readiness_score": 0.0,
+      "can_test": false,
+      "limitations": []
+    },
+    "03-multi-platform-publishing-FIXED": {
+      "description": "Multi-platform content publishing",
+      "status": "blocked",
+      "available_endpoints": [],
+      "missing_endpoints": [
+        "/api/v1/publishing/wordpress",
+        "/api/v1/publishing/medium",
+        "/api/v1/analytics/publishing-success"
+      ],
+      "rss_status": "ok",
+      "readiness_score": 0.0,
+      "can_test": false,
+      "limitations": []
+    }
+  },
+  "summary": {
+    "services_healthy": 0,
+    "total_services": 4,
+    "ready_workflows": [],
+    "blocked_workflows": [
+      "01-main-content-generation-pipeline-FIXED",
+      "02-adversarial-quality-optimization-FIXED",
+      "03-multi-platform-publishing-FIXED"
+    ],
+    "next_steps": [
+      "\ud83d\udea8 HIGH: Fix unhealthy services",
+      "\u26a0\ufe0f MEDIUM: Fix RSS access for Reuters Top News",
+      "\u2139\ufe0f LOW: Implement missing endpoints: /api/v1/analytics/adversarial-learning, /api/v1/content/generate, /api/v1/publishing/wordpress"
+    ]
+  }
+}
