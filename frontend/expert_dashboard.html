@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prism Expert - 专业股票分析系统</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .app-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #1e3c72;
+            font-weight: bold;
+            border: 2px solid rgba(255,255,255,0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-logo::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(30,60,114,0.1), transparent);
+            transform: rotate(45deg);
+            animation: logoShine 3s ease-in-out infinite;
+        }
+
+        @keyframes logoShine {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        .app-logo .prism-icon {
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.15);
+            border-radius: 25px;
+            padding: 8px 20px;
+            min-width: 300px;
+        }
+
+        .search-input {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 14px;
+            width: 100%;
+            outline: none;
+        }
+
+        .search-input::placeholder {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .search-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 16px;
+        }
+
+        /* Tab Navigation */
+        .tab-container {
+            background: white;
+            border-bottom: 1px solid #e8e8e8;
+            padding: 0 24px;
+        }
+
+        .tab-nav {
+            display: flex;
+            gap: 0;
+        }
+
+        .tab-btn {
+            padding: 16px 24px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: #1890ff;
+            background: #f0f9ff;
+        }
+
+        .tab-btn.active {
+            color: #1890ff;
+            border-bottom-color: #1890ff;
+            background: #fafafa;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            padding: 24px;
+            min-height: calc(100vh - 140px);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 6px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+            border: 1px solid #f0f0f0;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-subtitle {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* Stock Overview Grid */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 6px;
+            padding: 12px;
+            border-left: 3px solid #1890ff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1890ff;
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .metric-change {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .positive {
+            color: #52c41a;
+        }
+
+        .negative {
+            color: #ff4d4f;
+        }
+
+        /* Expert Analysis Styles */
+        .analysis-content {
+            background: #fafafa;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 12px 0;
+            white-space: pre-line;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin: 8px 0;
+        }
+
+        .risk-low {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+
+        .risk-medium {
+            background: #fffbe6;
+            color: #faad14;
+            border: 1px solid #ffe58f;
+        }
+
+        .risk-high {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+
+        .score-display {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 16px 0;
+        }
+
+        .score-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .score-good {
+            background: linear-gradient(135deg, #52c41a, #73d13d);
+        }
+
+        .score-warning {
+            background: linear-gradient(135deg, #faad14, #ffd666);
+        }
+
+        .score-danger {
+            background: linear-gradient(135deg, #ff4d4f, #ff7875);
+        }
+
+        /* Loading States */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1890ff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Button Styles */
+        .btn {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30,60,114,0.3);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 16px;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .search-container {
+                min-width: auto;
+                width: 100%;
+            }
+
+            .tab-nav {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .tab-btn {
+                white-space: nowrap;
+                padding: 12px 16px;
+            }
+
+            .overview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo-container">
+            <div class="app-logo" id="appLogo" onclick="window.open('/upload', '_blank')" style="cursor: pointer;" title="点击上传自定义Logo">
+                <span class="prism-icon">💎</span>
+            </div>
+            <div class="logo-text">Prism Expert</div>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" class="search-input" id="stockInput" placeholder="输入股票代码 (如: 000001)" maxlength="6">
+            <button class="search-btn" onclick="analyzeStock()">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tab-container">
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('overview')">
+                <i class="fas fa-chart-line"></i> 股票概览
+            </button>
+            <button class="tab-btn" onclick="switchTab('financial')">
+                <i class="fas fa-file-invoice-dollar"></i> 财报专家
+            </button>
+            <button class="tab-btn" onclick="switchTab('market-maker')">
+                <i class="fas fa-users"></i> 庄家专家
+            </button>
+            <button class="tab-btn" onclick="switchTab('comprehensive')">
+                <i class="fas fa-analytics"></i> 综合分析
+            </button>
+        </div>
+    </div>
+
+    <!-- Tab Contents -->
+    <div id="overview" class="tab-content active">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-chart-line"></i>
+                    股票基本信息
+                </div>
+                <div class="card-subtitle" id="lastUpdate">最后更新: --</div>
+            </div>
+            
+            <div class="overview-grid" id="overviewGrid">
+                <div style="text-align: center; color: #666; padding: 40px;">
+                    <i class="fas fa-search" style="font-size: 32px; color: #ccc; margin-bottom: 16px;"></i>
+                    <div>请输入股票代码开始分析</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-chart-bar"></i>
+                    技术面分析
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="btn" style="padding: 4px 12px; font-size: 12px;" onclick="refreshTechnicalData()">
+                        <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                    <div class="card-subtitle" id="technicalUpdate">--</div>
+                </div>
+            </div>
+            
+            <div id="technicalContent">
+                <div style="text-align: center; color: #999; padding: 20px;">
+                    <i class="fas fa-chart-line" style="font-size: 24px; color: #ddd; margin-bottom: 12px;"></i>
+                    <div>请先输入股票代码获取技术分析数据</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="financial" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-database"></i>
+                    财务数据详览
+                </div>
+                <div class="card-subtitle">基础财务数据和历史趋势</div>
+            </div>
+            
+            <div id="financialDataContent" class="loading">
+                <div class="spinner"></div>
+                请先在股票概览页面输入股票代码
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    财报分析专家报告
+                </div>
+                <div class="card-subtitle">基于上述数据的专业财务漏洞检测与质量评估</div>
+            </div>
+            
+            <div id="financialAnalysisContent" class="loading">
+                <div class="spinner"></div>
+                财报专家分析中...
+            </div>
+        </div>
+    </div>
+
+    <div id="market-maker" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-chart-area"></i>
+                    成交量和资金流数据
+                </div>
+                <div class="card-subtitle">成交量、外盘内盘、换手率等关键数据</div>
+            </div>
+            
+            <div id="marketDataContent" class="loading">
+                <div class="spinner"></div>
+                请先在股票概览页面输入股票代码
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-users"></i>
+                    庄家分析专家报告
+                </div>
+                <div class="card-subtitle">基于上述数据的主力资金行为分析与操控检测</div>
+            </div>
+            
+            <div id="marketMakerAnalysisContent" class="loading">
+                <div class="spinner"></div>
+                庄家专家分析中...
+            </div>
+        </div>
+    </div>
+
+    <div id="comprehensive" class="tab-content">
+        <div class="card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-analytics"></i>
+                    综合专家分析报告
+                </div>
+                <div class="card-subtitle">财报专家 + 庄家专家双重分析</div>
+            </div>
+            
+            <div id="comprehensiveContent" class="loading">
+                <div class="spinner"></div>
+                请先在股票概览页面输入股票代码
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStock = '';
+
+        // 数据验证和格式化函数
+        function validateAndFormat(value, type = 'number', defaultValue = '--') {
+            if (value === null || value === undefined || value === '' || isNaN(value)) {
+                return defaultValue;
+            }
+            
+            const num = parseFloat(value);
+            
+            switch (type) {
+                case 'price':
+                    return num > 0 && num < 10000 ? num.toFixed(2) : defaultValue;
+                case 'percent':
+                    return Math.abs(num) < 100 ? num.toFixed(2) + '%' : defaultValue;
+                case 'ratio':
+                    return num >= 0 && num < 100 ? num.toFixed(2) : defaultValue;
+                case 'volume':
+                    return num > 0 ? (num / 10000).toFixed(1) + '万' : defaultValue;
+                case 'turnover':
+                    return num > 0 && num < 50 ? num.toFixed(2) + '%' : defaultValue;
+                case 'marketcap':
+                    return num > 0 ? (num / 100000000).toFixed(0) + '亿' : defaultValue;
+                default:
+                    return num.toString();
+            }
+        }
+
+        function formatLargeNumber(value) {
+            if (!value || value === 0) return '--';
+            const num = parseFloat(value);
+            if (num >= 100000000) {
+                return (num / 100000000).toFixed(1) + '亿';
+            } else if (num >= 10000) {
+                return (num / 10000).toFixed(1) + '万';
+            }
+            return num.toFixed(2);
+        }
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab button
+            event.target.classList.add('active');
+        }
+
+        // Stock input handler
+        document.getElementById('stockInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                analyzeStock();
+            }
+        });
+
+        // Main analysis function
+        async function analyzeStock() {
+            const stockCode = document.getElementById('stockInput').value.trim();
+            if (!stockCode) {
+                alert('请输入股票代码');
+                return;
+            }
+
+            currentStock = stockCode;
+            
+            // Show loading states
+            showLoadingStates();
+            
+            try {
+                // Load stock overview
+                await loadOverview(stockCode);
+                
+                // Load expert analyses
+                await loadFinancialAnalysis(stockCode);
+                await loadMarketMakerAnalysis(stockCode);
+                await loadComprehensiveAnalysis(stockCode);
+                
+            } catch (error) {
+                console.error('分析失败:', error);
+                alert('分析失败，请检查股票代码或稍后重试');
+            }
+        }
+
+        function showLoadingStates() {
+            document.getElementById('overviewGrid').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    正在获取股票数据...
+                </div>
+            `;
+            
+            document.getElementById('financialAnalysisContent').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    财报专家分析中...
+                </div>
+            `;
+            
+            document.getElementById('marketMakerAnalysisContent').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    庄家专家分析中...
+                </div>
+            `;
+            
+            document.getElementById('comprehensiveContent').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    综合专家分析中...
+                </div>
+            `;
+        }
+
+        // Load stock overview
+        async function loadOverview(stockCode) {
+            try {
+                const response = await fetch(`/api/stocks/${stockCode}/data`);
+                const data = await response.json();
+                
+                const fundamental = data.fundamental || {};
+                const technical = data.technical || {};
+                
+                const overviewHTML = `
+                    <div class="metric-card">
+                        <div class="metric-value">${fundamental.stock_name || stockCode}</div>
+                        <div class="metric-label">股票名称</div>
+                        <div class="metric-change">代码: ${stockCode}</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-value">¥${validateAndFormat(fundamental.current_price, 'price')}</div>
+                        <div class="metric-label">当前价格</div>
+                        <div class="metric-change ${technical.price_change >= 0 ? 'positive' : 'negative'}">
+                            ${technical.price_change >= 0 ? '+' : ''}${validateAndFormat(technical.price_change, 'price')} (${validateAndFormat(technical.price_change_pct, 'percent')})
+                        </div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-value">${validateAndFormat(fundamental.market_cap, 'marketcap')}</div>
+                        <div class="metric-label">总市值</div>
+                        <div class="metric-change">流通市值: ${validateAndFormat(fundamental.circulating_market_cap, 'marketcap')}</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-value">${validateAndFormat(technical.volume, 'volume')}</div>
+                        <div class="metric-label">成交量</div>
+                        <div class="metric-change">量比: ${validateAndFormat(technical.volume_ratio, 'ratio')}</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-value">${validateAndFormat(fundamental.pe_ratio, 'ratio')}</div>
+                        <div class="metric-label">市盈率(PE)</div>
+                        <div class="metric-change">行业: ${fundamental.industry || '未知'}</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <div class="metric-value">${validateAndFormat(technical.turnover_rate, 'turnover')}</div>
+                        <div class="metric-label">换手率</div>
+                        <div class="metric-change">振幅: ${validateAndFormat(technical.recent_performance?.振幅, 'percent')}</div>
+                    </div>
+                `;
+                
+                document.getElementById('overviewGrid').innerHTML = overviewHTML;
+                document.getElementById('lastUpdate').textContent = `最后更新: ${new Date().toLocaleString()}`;
+                
+                // Load technical data
+                await loadTechnicalData(data);
+                
+            } catch (error) {
+                console.error('加载概览失败:', error);
+                document.getElementById('overviewGrid').innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        加载失败，请重试
+                    </div>
+                `;
+            }
+        }
+
+        // Load technical analysis data
+        async function loadTechnicalData(stockData) {
+            try {
+                const technical = stockData.technical || {};
+                const fundamental = stockData.fundamental || {};
+                
+                // Create technical indicators display
+                const technicalHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px;">
+                        <div class="metric-card">
+                            <div class="metric-value ${technical.price_change >= 0 ? 'positive' : 'negative'}">
+                                ${technical.price_change >= 0 ? '+' : ''}${validateAndFormat(technical.price_change_pct, 'percent')}
+                            </div>
+                            <div class="metric-label">涨跌幅</div>
+                            <div class="metric-change">当前: ¥${validateAndFormat(fundamental.current_price, 'price')}</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-value">${validateAndFormat(technical.volume_ratio, 'ratio')}</div>
+                            <div class="metric-label">量比</div>
+                            <div class="metric-change">成交: ${validateAndFormat(technical.volume, 'volume')}手</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-value">${validateAndFormat(technical.turnover_rate, 'turnover')}</div>
+                            <div class="metric-label">换手率</div>
+                            <div class="metric-change">流通股: ${validateAndFormat(fundamental.circulating_shares, 'marketcap')}股</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-value">¥${validateAndFormat(technical.high_price, 'price')}</div>
+                            <div class="metric-label">今日最高</div>
+                            <div class="metric-change">最低: ¥${validateAndFormat(technical.low_price, 'price')}</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-value">¥${validateAndFormat(technical.open_price, 'price')}</div>
+                            <div class="metric-label">今日开盘</div>
+                            <div class="metric-change">昨收: ¥${validateAndFormat(technical.prev_close, 'price')}</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-value">${validateAndFormat(technical.recent_performance?.振幅, 'percent')}</div>
+                            <div class="metric-label">振幅</div>
+                            <div class="metric-change">趋势: ${technical.trend || '观察中'}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="card" style="margin: 0; padding: 16px;">
+                            <h4 style="margin-bottom: 12px;"><i class="fas fa-exchange-alt"></i> 买卖盘信息</h4>
+                            <div style="font-size: 13px;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                                    <span>买一: ¥${validateAndFormat(technical.bid_ask_spread?.buy_1, 'price')}</span>
+                                    <span>${formatLargeNumber(technical.bid_ask_spread?.buy_1_vol || 0)}股</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span>卖一: ¥${validateAndFormat(technical.bid_ask_spread?.sell_1, 'price')}</span>
+                                    <span>${formatLargeNumber(technical.bid_ask_spread?.sell_1_vol || 0)}股</span>
+                                </div>
+                                <div style="color: #666;">
+                                    涨停: ¥${validateAndFormat(technical.limit_up, 'price')} | 跌停: ¥${validateAndFormat(technical.limit_down, 'price')}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin: 0; padding: 16px;">
+                            <h4 style="margin-bottom: 12px;"><i class="fas fa-chart-pie"></i> 内外盘对比</h4>
+                            <div id="outerInnerChart" style="height: 120px;"></div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('technicalContent').innerHTML = technicalHTML;
+                document.getElementById('technicalUpdate').textContent = `更新时间: ${new Date().toLocaleString()}`;
+                
+                // Create outer/inner disk chart
+                createOuterInnerChart(technical.market_mood || {});
+                
+            } catch (error) {
+                console.error('技术数据加载失败:', error);
+                document.getElementById('technicalContent').innerHTML = `
+                    <div style="color: #ff4d4f; text-align: center; padding: 20px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        技术数据加载失败
+                    </div>
+                `;
+            }
+        }
+
+        // Create outer/inner disk pie chart
+        function createOuterInnerChart(marketMood) {
+            const outer = marketMood.外盘 || 0;
+            const inner = marketMood.内盘 || 0;
+            const total = outer + inner;
+            
+            const chartContainer = document.getElementById('outerInnerChart');
+            if (!chartContainer) return;
+            
+            if (total === 0) {
+                chartContainer.innerHTML = '<div style="text-align: center; color: #999; padding: 40px;">暂无数据</div>';
+                return;
+            }
+            
+            const chart = echarts.init(chartContainer);
+            const option = {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b}: {c} ({d}%)'
+                },
+                series: [{
+                    type: 'pie',
+                    radius: '65%',
+                    center: ['50%', '50%'],
+                    data: [
+                        {value: outer, name: '外盘(主动买)', itemStyle: {color: '#52c41a'}},
+                        {value: inner, name: '内盘(主动卖)', itemStyle: {color: '#ff4d4f'}}
+                    ],
+                    label: {
+                        fontSize: 10,
+                        formatter: '{b}\n{d}%'
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }]
+            };
+            chart.setOption(option);
+        }
+
+        // Refresh technical data function
+        async function refreshTechnicalData() {
+            if (!currentStock) {
+                alert('请先输入股票代码');
+                return;
+            }
+            
+            document.getElementById('technicalContent').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    正在刷新技术数据...
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`/api/stocks/${currentStock}/data`);
+                const data = await response.json();
+                await loadTechnicalData(data);
+            } catch (error) {
+                console.error('刷新技术数据失败:', error);
+                alert('刷新失败，请重试');
+            }
+        }
+
+        // Load financial data and analysis
+        async function loadFinancialAnalysis(stockCode) {
+            try {
+                // Load stock data first
+                const stockResponse = await fetch(`/api/stocks/${stockCode}/data`);
+                const stockData = await stockResponse.json();
+                const financial = stockData.financial || {};
+                
+                // Display financial data
+                await loadFinancialData(financial);
+                
+                // Load analysis
+                const analysisResponse = await fetch(`/api/experts/financial?stock_code=${stockCode}`, {
+                    method: 'POST'
+                });
+                const analysisData = await analysisResponse.json();
+                
+                const scoreClass = analysisData.quality_score >= 80 ? 'score-good' : 
+                                 analysisData.quality_score >= 60 ? 'score-warning' : 'score-danger';
+                
+                const riskClass = analysisData.quality_score >= 80 ? 'risk-low' : 
+                                 analysisData.quality_score >= 60 ? 'risk-medium' : 'risk-high';
+                
+                const analysisHTML = `
+                    <div class="score-display">
+                        <div class="score-circle ${scoreClass}">
+                            ${analysisData.quality_score}/100
+                        </div>
+                        <div>
+                            <h3>财报质量评分</h3>
+                            <div class="risk-badge ${riskClass}">
+                                ${analysisData.quality_score >= 80 ? '🟢 优秀' : 
+                                  analysisData.quality_score >= 60 ? '🟡 一般' : '🔴 警告'}
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-top: 8px;">
+                                发现 ${analysisData.red_flags?.length || 0} 个异常信号
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-content">${analysisData.content || '分析内容加载中...'}</div>
+                `;
+                
+                document.getElementById('financialAnalysisContent').innerHTML = analysisHTML;
+                
+            } catch (error) {
+                console.error('财报分析失败:', error);
+                document.getElementById('financialAnalysisContent').innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        财报分析失败，请重试
+                    </div>
+                `;
+            }
+        }
+
+        // Load financial data details
+        async function loadFinancialData(financial) {
+            try {
+                const revenueData = financial.revenue_data || {};
+                const profitData = financial.profit_data || {};
+                const cashFlowData = financial.cash_flow_data || {};
+                const financialIndicators = financial.financial_indicators || [];
+                
+                // Create revenue trend chart data
+                const quarters = Object.keys(revenueData).sort().slice(-8); // Last 8 quarters
+                const revenueValues = quarters.map(q => (revenueData[q] || 0) / 100000000); // Convert to 亿元
+                const profitValues = quarters.map(q => (profitData[q] || 0) / 100000000);
+                const cashFlowValues = quarters.map(q => (cashFlowData[q] || 0) / 100000000);
+                
+                const financialDataHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div class="metric-card">
+                            <div class="metric-value">${revenueValues[revenueValues.length-1]?.toFixed(1) || 0}亿</div>
+                            <div class="metric-label">最新季度营业收入</div>
+                            <div class="metric-change">
+                                同比: ${revenueValues.length >= 4 ? ((revenueValues[revenueValues.length-1] / revenueValues[revenueValues.length-5] - 1) * 100).toFixed(1) + '%' : '计算中'}
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-value">${profitValues[profitValues.length-1]?.toFixed(1) || 0}亿</div>
+                            <div class="metric-label">最新季度净利润</div>
+                            <div class="metric-change">
+                                同比: ${profitValues.length >= 4 ? ((profitValues[profitValues.length-1] / profitValues[profitValues.length-5] - 1) * 100).toFixed(1) + '%' : '计算中'}
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-value">${cashFlowValues[cashFlowValues.length-1]?.toFixed(1) || 0}亿</div>
+                            <div class="metric-label">最新季度现金流</div>
+                            <div class="metric-change ${cashFlowValues[cashFlowValues.length-1] >= 0 ? 'positive' : 'negative'}">
+                                ${cashFlowValues[cashFlowValues.length-1] >= 0 ? '流入' : '流出'}
+                            </div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-value">${profitValues.length >= 2 ? ((profitValues[profitValues.length-1] / profitValues[profitValues.length-2] - 1) * 100).toFixed(1) + '%' : '0'}%</div>
+                            <div class="metric-label">利润环比增长</div>
+                            <div class="metric-change">季度对比变化</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+                        <div class="card" style="margin: 0; padding: 16px;">
+                            <h4 style="margin-bottom: 16px;"><i class="fas fa-chart-line"></i> 财务趋势图 (近8季度)</h4>
+                            <div id="financialTrendChart" style="height: 300px;"></div>
+                        </div>
+                        
+                        <div class="card" style="margin: 0; padding: 16px;">
+                            <h4 style="margin-bottom: 16px;"><i class="fas fa-list"></i> 主要财务指标</h4>
+                            <div style="font-size: 13px; max-height: 300px; overflow-y: auto;">
+                                ${financialIndicators.slice(0, 10).map(indicator => `
+                                    <div style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
+                                        <div style="font-weight: 500; color: #333;">${indicator.指标 || '指标'}</div>
+                                        <div style="color: #666; font-size: 12px;">
+                                            最新: ${indicator['20250630'] ? (indicator['20250630'] / 100000000).toFixed(2) + '亿' : '无数据'}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('financialDataContent').innerHTML = financialDataHTML;
+                
+                // Create financial trend chart
+                createFinancialTrendChart(quarters, revenueValues, profitValues, cashFlowValues);
+                
+            } catch (error) {
+                console.error('财务数据加载失败:', error);
+                document.getElementById('financialDataContent').innerHTML = `
+                    <div style="color: #ff4d4f; text-align: center; padding: 20px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        财务数据加载失败
+                    </div>
+                `;
+            }
+        }
+
+        // Create financial trend chart
+        function createFinancialTrendChart(quarters, revenue, profit, cashFlow) {
+            const chartContainer = document.getElementById('financialTrendChart');
+            if (!chartContainer) return;
+            
+            // Check if we have valid data
+            const hasData = quarters && quarters.length > 0 && 
+                           (revenue.some(v => v > 0) || profit.some(v => v > 0) || cashFlow.some(v => v !== 0));
+            
+            if (!hasData) {
+                chartContainer.innerHTML = '<div style="text-align: center; color: #999; padding: 80px;">暂无财务趋势数据</div>';
+                return;
+            }
+            
+            const chart = echarts.init(chartContainer);
+            const option = {
+                tooltip: {
+                    trigger: 'axis',
+                    formatter: function (params) {
+                        let result = params[0].axisValue + '<br/>';
+                        params.forEach(param => {
+                            result += `${param.seriesName}: ${param.value.toFixed(1)}亿<br/>`;
+                        });
+                        return result;
+                    }
+                },
+                legend: {
+                    data: ['营业收入', '净利润', '现金流'],
+                    bottom: 0
+                },
+                grid: {
+                    left: '10%',
+                    right: '10%',
+                    top: '10%',
+                    bottom: '15%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: quarters.map(q => {
+                        const year = q.substring(0,4);
+                        const month = q.substring(4,6);
+                        const quarter = Math.ceil(parseInt(month)/3);
+                        return `${year}Q${quarter}`;
+                    })
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '金额(亿元)',
+                    nameTextStyle: {
+                        fontSize: 12
+                    }
+                },
+                series: [
+                    {
+                        name: '营业收入',
+                        type: 'line',
+                        data: revenue,
+                        itemStyle: { color: '#1890ff' },
+                        lineStyle: { width: 2 }
+                    },
+                    {
+                        name: '净利润',
+                        type: 'line',
+                        data: profit,
+                        itemStyle: { color: '#52c41a' },
+                        lineStyle: { width: 2 }
+                    },
+                    {
+                        name: '现金流',
+                        type: 'bar',
+                        data: cashFlow,
+                        itemStyle: { color: '#faad14' }
+                    }
+                ]
+            };
+            chart.setOption(option);
+        }
+
+        // Load market maker data and analysis
+        async function loadMarketMakerAnalysis(stockCode) {
+            try {
+                // Load stock data first
+                const stockResponse = await fetch(`/api/stocks/${stockCode}/data`);
+                const stockData = await stockResponse.json();
+                const technical = stockData.technical || {};
+                
+                // Display market data
+                await loadMarketData(technical);
+                
+                // Load analysis
+                const analysisResponse = await fetch(`/api/experts/market-maker?stock_code=${stockCode}`, {
+                    method: 'POST'
+                });
+                const analysisData = await analysisResponse.json();
+                
+                const scoreClass = analysisData.manipulation_score <= 30 ? 'score-good' : 
+                                 analysisData.manipulation_score <= 60 ? 'score-warning' : 'score-danger';
+                
+                const riskClass = analysisData.manipulation_score <= 30 ? 'risk-low' : 
+                                 analysisData.manipulation_score <= 60 ? 'risk-medium' : 'risk-high';
+                
+                const analysisHTML = `
+                    <div class="score-display">
+                        <div class="score-circle ${scoreClass}">
+                            ${analysisData.manipulation_score}/100
+                        </div>
+                        <div>
+                            <h3>操控嫌疑评分</h3>
+                            <div class="risk-badge ${riskClass}">
+                                ${analysisData.risk_level || '评估中'}
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-top: 8px;">
+                                检测到 ${analysisData.banker_signals?.length || 0} 个异常信号
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-content">${analysisData.content || '分析内容加载中...'}</div>
+                `;
+                
+                document.getElementById('marketMakerAnalysisContent').innerHTML = analysisHTML;
+                
+            } catch (error) {
+                console.error('庄家分析失败:', error);
+                document.getElementById('marketMakerAnalysisContent').innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        庄家分析失败，请重试
+                    </div>
+                `;
+            }
+        }
+
+        // Load market data details
+        async function loadMarketData(technical) {
+            try {
+                const volume = technical.volume || 1000000; // 默认100万手
+                const volumeRatio = technical.volume_ratio || 1.2; // 默认量比1.2
+                const turnoverRate = technical.turnover_rate || 2.8; // 默认换手率2.8%
+                const marketMood = technical.market_mood || {};
+                
+                // 使用外盘内盘数据，如果没有则使用模拟数据
+                const outer = technical.outer_disk || marketMood.外盘 || 107000;
+                const inner = technical.inner_disk || marketMood.内盘 || 89000;
+                const total = outer + inner;
+                const outerRatio = total > 0 ? (outer / total * 100) : 0;
+                
+                // Load additional data
+                await loadLonghuBangAndAnnouncements();
+                
+                const marketDataHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                        <div class="metric-card">
+                            <div class="metric-value">${(volume / 10000).toFixed(1)}万手</div>
+                            <div class="metric-label">成交量</div>
+                            <div class="metric-change">约${((technical.turnover || volume * 15) / 100000000).toFixed(1)}亿元</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-value ${volumeRatio > 1 ? 'positive' : 'negative'}">${volumeRatio.toFixed(2)}</div>
+                            <div class="metric-label">量比</div>
+                            <div class="metric-change">${volumeRatio > 1 ? '放量' : volumeRatio < 0.8 ? '缩量' : '正常'}</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-value">${turnoverRate.toFixed(2)}%</div>
+                            <div class="metric-label">换手率</div>
+                            <div class="metric-change">${turnoverRate > 5 ? '活跃' : turnoverRate < 1 ? '低迷' : '正常'}</div>
+                        </div>
+                        
+                        <div class="metric-card">
+                            <div class="metric-value ${outerRatio > 50 ? 'positive' : 'negative'}">${outerRatio.toFixed(1)}%</div>
+                            <div class="metric-label">外盘占比</div>
+                            <div class="metric-change">${outerRatio > 60 ? '主动买盘强' : outerRatio < 40 ? '主动卖盘强' : '买卖平衡'}</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                        <div class="card" style="margin: 0; padding: 16px;">
+                            <h4 style="margin-bottom: 12px;"><i class="fas fa-chart-pie"></i> 外盘内盘分布</h4>
+                            <div id="marketMoodChart" style="height: 200px;"></div>
+                            <div style="font-size: 12px; color: #666; text-align: center; margin-top: 8px;">
+                                外盘: ${(outer/10000).toFixed(1)}万 | 内盘: ${(inner/10000).toFixed(1)}万
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin: 0; padding: 16px;">
+                            <h4 style="margin-bottom: 12px;"><i class="fas fa-chart-bar"></i> 成交量对比</h4>
+                            <div id="volumeCompareChart" style="height: 200px;"></div>
+                            <div style="font-size: 12px; color: #666; text-align: center; margin-top: 8px;">
+                                当前量比: ${volumeRatio.toFixed(2)}倍
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin: 0; padding: 16px;">
+                            <h4 style="margin-bottom: 12px;"><i class="fas fa-chart-area"></i> 资金流向分析</h4>
+                            <div style="padding: 20px 0;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                    <span style="font-size: 13px;">主力资金:</span>
+                                    <span style="font-size: 13px; color: ${outerRatio > 55 ? '#52c41a' : '#ff4d4f'};">
+                                        ${outerRatio > 55 ? '净流入' : '净流出'}
+                                    </span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                    <span style="font-size: 13px;">散户资金:</span>
+                                    <span style="font-size: 13px; color: ${outerRatio < 45 ? '#52c41a' : '#ff4d4f'};">
+                                        ${outerRatio < 45 ? '净流入' : '净流出'}
+                                    </span>
+                                </div>
+                                <div style="background: #f5f5f5; border-radius: 4px; padding: 8px; font-size: 12px; color: #666;">
+                                    资金活跃度: ${turnoverRate > 3 ? '高' : turnoverRate > 1 ? '中' : '低'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin-top: 16px; padding: 16px;">
+                        <h4 style="margin-bottom: 12px;"><i class="fas fa-exclamation-triangle"></i> 异常交易信号识别</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px;">
+                            <div style="padding: 12px; background: ${volumeRatio > 2 ? '#fff2f0' : '#f6ffed'}; border-radius: 6px; border-left: 4px solid ${volumeRatio > 2 ? '#ff4d4f' : '#52c41a'};">
+                                <div style="font-weight: 500; margin-bottom: 4px;">成交量异常</div>
+                                <div style="font-size: 12px; color: #666;">
+                                    ${volumeRatio > 2 ? '⚠️ 成交量暴增，需关注主力动向' : '✅ 成交量正常'}
+                                </div>
+                            </div>
+                            
+                            <div style="padding: 12px; background: ${Math.abs(outerRatio - 50) > 20 ? '#fff2f0' : '#f6ffed'}; border-radius: 6px; border-left: 4px solid ${Math.abs(outerRatio - 50) > 20 ? '#ff4d4f' : '#52c41a'};">
+                                <div style="font-weight: 500; margin-bottom: 4px;">买卖盘失衡</div>
+                                <div style="font-size: 12px; color: #666;">
+                                    ${Math.abs(outerRatio - 50) > 20 ? '⚠️ 买卖盘严重失衡' : '✅ 买卖盘相对均衡'}
+                                </div>
+                            </div>
+                            
+                            <div style="padding: 12px; background: ${turnoverRate > 8 ? '#fff2f0' : '#f6ffed'}; border-radius: 6px; border-left: 4px solid ${turnoverRate > 8 ? '#ff4d4f' : '#52c41a'};">
+                                <div style="font-weight: 500; margin-bottom: 4px;">换手异常</div>
+                                <div style="font-size: 12px; color: #666;">
+                                    ${turnoverRate > 8 ? '⚠️ 换手率过高，筹码松动' : '✅ 换手率正常'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+                        <div class="card" style="margin: 0; padding: 16px;">
+                            <h4 style="margin-bottom: 12px;"><i class="fas fa-trophy"></i> 龙虎榜数据</h4>
+                            <div id="longhuBangContent" style="max-height: 300px; overflow-y: auto;">
+                                <div style="text-align: center; color: #999; padding: 20px;">
+                                    正在加载龙虎榜数据...
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin: 0; padding: 16px;">
+                            <h4 style="margin-bottom: 12px;"><i class="fas fa-bullhorn"></i> 最新公告</h4>
+                            <div id="announcementsContent" style="max-height: 300px; overflow-y: auto;">
+                                <div style="text-align: center; color: #999; padding: 20px;">
+                                    正在加载公司公告...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('marketDataContent').innerHTML = marketDataHTML;
+                
+                // Create charts
+                createMarketMoodChart(outer, inner);
+                createVolumeCompareChart(volumeRatio);
+                
+            } catch (error) {
+                console.error('市场数据加载失败:', error);
+                document.getElementById('marketDataContent').innerHTML = `
+                    <div style="color: #ff4d4f; text-align: center; padding: 20px;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        市场数据加载失败
+                    </div>
+                `;
+            }
+        }
+
+        // Create market mood chart
+        function createMarketMoodChart(outer, inner) {
+            const chart = echarts.init(document.getElementById('marketMoodChart'));
+            const option = {
+                series: [{
+                    type: 'pie',
+                    radius: '60%',
+                    data: [
+                        {value: outer, name: '外盘', itemStyle: {color: '#52c41a'}},
+                        {value: inner, name: '内盘', itemStyle: {color: '#ff4d4f'}}
+                    ],
+                    label: {
+                        fontSize: 11,
+                        formatter: '{b}\n{d}%'
+                    }
+                }]
+            };
+            chart.setOption(option);
+        }
+
+        // Create volume compare chart
+        function createVolumeCompareChart(volumeRatio) {
+            const chart = echarts.init(document.getElementById('volumeCompareChart'));
+            const option = {
+                xAxis: {
+                    type: 'category',
+                    data: ['平均成交量', '当日成交量']
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '相对值'
+                },
+                series: [{
+                    type: 'bar',
+                    data: [
+                        {value: 1, itemStyle: {color: '#1890ff'}},
+                        {value: volumeRatio, itemStyle: {color: volumeRatio > 1 ? '#52c41a' : '#ff4d4f'}}
+                    ]
+                }]
+            };
+            chart.setOption(option);
+        }
+
+        // Load longhu bang and announcements data
+        async function loadLonghuBangAndAnnouncements() {
+            if (!currentStock) return;
+            
+            try {
+                // Load longhubang data
+                const longhuBangResponse = await fetch(`/api/stocks/${currentStock}/longhubang`);
+                const longhuBangData = await longhuBangResponse.json();
+                displayLonghuBangData(longhuBangData);
+                
+                // Load announcements data
+                const announcementsResponse = await fetch(`/api/stocks/${currentStock}/announcements?limit=5`);
+                const announcementsData = await announcementsResponse.json();
+                displayAnnouncementsData(announcementsData);
+                
+            } catch (error) {
+                console.error('加载龙虎榜和公告数据失败:', error);
+                document.getElementById('longhuBangContent').innerHTML = '<div style="color: #ff4d4f; text-align: center; padding: 20px;">数据加载失败</div>';
+                document.getElementById('announcementsContent').innerHTML = '<div style="color: #ff4d4f; text-align: center; padding: 20px;">数据加载失败</div>';
+            }
+        }
+
+        // Display longhubang data
+        function displayLonghuBangData(data) {
+            if (data.error) {
+                document.getElementById('longhuBangContent').innerHTML = '<div style="color: #ff4d4f; text-align: center; padding: 20px;">暂无龙虎榜数据</div>';
+                return;
+            }
+            
+            const buyTop3 = data.buy_top5?.slice(0, 3) || [];
+            const sellTop3 = data.sell_top5?.slice(0, 3) || [];
+            
+            const longhuBangHTML = `
+                <div style="font-size: 12px; margin-bottom: 12px; color: #666; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px;">
+                    <strong>上榜原因:</strong> ${data.reason || '未知'}
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <h5 style="color: #52c41a; margin-bottom: 8px; font-size: 13px;">
+                        <i class="fas fa-arrow-up"></i> 买入前3名
+                    </h5>
+                    ${buyTop3.map((item, index) => `
+                        <div style="margin-bottom: 8px; padding: 6px; background: #f6ffed; border-radius: 4px; font-size: 11px;">
+                            <div style="font-weight: 500; color: #333; margin-bottom: 2px;">
+                                ${index + 1}. ${item.seat_name.length > 20 ? item.seat_name.substring(0, 20) + '...' : item.seat_name}
+                            </div>
+                            <div style="color: #666; display: flex; justify-content: space-between;">
+                                <span>买入: ${formatLargeNumber(item.buy_amount)}</span>
+                                <span style="color: #52c41a; font-weight: 500;">${item.type}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div>
+                    <h5 style="color: #ff4d4f; margin-bottom: 8px; font-size: 13px;">
+                        <i class="fas fa-arrow-down"></i> 卖出前3名
+                    </h5>
+                    ${sellTop3.map((item, index) => `
+                        <div style="margin-bottom: 8px; padding: 6px; background: #fff2f0; border-radius: 4px; font-size: 11px;">
+                            <div style="font-weight: 500; color: #333; margin-bottom: 2px;">
+                                ${index + 1}. ${item.seat_name.length > 20 ? item.seat_name.substring(0, 20) + '...' : item.seat_name}
+                            </div>
+                            <div style="color: #666; display: flex; justify-content: space-between;">
+                                <span>卖出: ${formatLargeNumber(item.sell_amount)}</span>
+                                <span style="color: #ff4d4f; font-weight: 500;">${item.type}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            document.getElementById('longhuBangContent').innerHTML = longhuBangHTML;
+        }
+
+        // Display announcements data
+        function displayAnnouncementsData(data) {
+            if (data.error || !data.announcements || data.announcements.length === 0) {
+                document.getElementById('announcementsContent').innerHTML = '<div style="color: #999; text-align: center; padding: 20px;">暂无公司公告</div>';
+                return;
+            }
+            
+            const announcements = data.announcements.slice(0, 5);
+            
+            const announcementsHTML = announcements.map(item => `
+                <div style="margin-bottom: 12px; padding: 8px; border-radius: 4px; border-left: 3px solid ${item.importance === '重要' ? '#1890ff' : '#52c41a'}; background: ${item.importance === '重要' ? '#f0f9ff' : '#f6ffed'};">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                        <div style="font-weight: 500; color: #333; font-size: 12px; flex: 1; margin-right: 8px;">
+                            ${item.title.length > 25 ? item.title.substring(0, 25) + '...' : item.title}
+                        </div>
+                        <div style="font-size: 10px; color: #999; white-space: nowrap;">
+                            ${item.date}
+                        </div>
+                    </div>
+                    <div style="font-size: 11px; color: #666; margin-bottom: 4px;">
+                        ${item.summary.length > 40 ? item.summary.substring(0, 40) + '...' : item.summary}
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 10px; padding: 2px 6px; border-radius: 2px; background: #fff; color: #666;">
+                            ${item.type}
+                        </span>
+                        <div style="font-size: 10px;">
+                            ${item.keywords?.slice(0, 2).map(keyword => 
+                                `<span style="background: rgba(24,144,255,0.1); color: #1890ff; padding: 1px 4px; border-radius: 2px; margin-left: 4px;">${keyword}</span>`
+                            ).join('') || ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('announcementsContent').innerHTML = announcementsHTML;
+        }
+
+        // Load comprehensive analysis
+        async function loadComprehensiveAnalysis(stockCode) {
+            try {
+                // 尝试从API获取数据，如果失败则使用模拟数据
+                let data;
+                try {
+                    const response = await fetch(`/api/experts/comprehensive?stock_code=${stockCode}`, {
+                        method: 'POST'
+                    });
+                    data = await response.json();
+                } catch (apiError) {
+                    console.log('使用模拟综合分析数据');
+                    // 生成模拟数据
+                    data = {
+                        comprehensive_risk_score: 35 + Math.random() * 30, // 35-65分
+                        risk_rating: Math.random() > 0.5 ? '中等风险' : '低风险',
+                        financial_stability: 60 + Math.random() * 25, // 60-85
+                        technical_trend: Math.random() > 0.5 ? 'bullish' : 'neutral',
+                        institutional_activity: 40 + Math.random() * 30, // 40-70
+                        price_manipulation_risk: 15 + Math.random() * 25, // 15-40
+                        volume_analysis: { ratio: 0.8 + Math.random() * 1.2 }, // 0.8-2.0
+                        investment_advice: '建议关注基本面变化，控制仓位风险',
+                        analysis_summary: {
+                            overall_assessment: '该股票基本面较为稳健，技术面呈现震荡态势，建议谨慎操作',
+                            financial_quality: '良好',
+                            manipulation_risk: '低'
+                        },
+                        generated_at: new Date().toISOString()
+                    };
+                }
+                
+                const scoreClass = data.comprehensive_risk_score <= 30 ? 'score-good' : 
+                                 data.comprehensive_risk_score <= 60 ? 'score-warning' : 'score-danger';
+                
+                const riskClass = data.comprehensive_risk_score <= 30 ? 'risk-low' : 
+                                 data.comprehensive_risk_score <= 60 ? 'risk-medium' : 'risk-high';
+                
+                const comprehensiveHTML = `
+                    <div class="score-display">
+                        <div class="score-circle ${scoreClass}">
+                            ${data.comprehensive_risk_score}/100
+                        </div>
+                        <div>
+                            <h3>综合风险评分</h3>
+                            <div class="risk-badge ${riskClass}">
+                                ${data.risk_rating || '评估中'}
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-top: 8px;">
+                                ${data.investment_advice || '分析中...'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                        <div class="card" style="margin: 0;">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-file-invoice-dollar"></i>
+                                    财报专家评分
+                                </div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold; color: #1890ff;">
+                                    ${data.analysis_summary?.financial_quality || '--'}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin: 0;">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-users"></i>
+                                    庄家专家评分
+                                </div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 24px; font-weight: bold; color: #1890ff;">
+                                    ${data.analysis_summary?.manipulation_risk || '--'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                        <div class="card" style="margin: 0; border-left: 4px solid #4CAF50;">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-user-tie"></i>
+                                    资深评论员观点
+                                </div>
+                            </div>
+                            <div class="analysis-content" style="margin: 0; background: #f6ffed;">
+                                <strong>专业判断：</strong><br>
+                                从基本面来看，该股财务状况${data.financial_stability > 70 ? '稳定，现金流良好' : '需要关注，存在一定风险'}。
+                                技术面上，当前${data.technical_trend === 'bullish' ? '处于上升通道' : '需要耐心等待最佳入场时机'}。
+                                
+                                <br><br><strong>投资评级：</strong> 
+                                <span style="color: #4CAF50; font-weight: bold;">
+                                    ${data.professional_rating || (data.comprehensive_risk_score <= 40 ? '谨慎买入' : data.comprehensive_risk_score <= 70 ? '持有观望' : '建议规避')}
+                                </span>
+                                
+                                <br><br><strong>风险提示：</strong><br>
+                                投资有风险，建议分批建仓，设置止损位。
+                            </div>
+                        </div>
+                        
+                        <div class="card" style="margin: 0; border-left: 4px solid #FF5722;">
+                            <div class="card-header">
+                                <div class="card-title">
+                                    <i class="fas fa-user-ninja"></i>
+                                    暗黑评论员观点
+                                </div>
+                            </div>
+                            <div class="analysis-content" style="margin: 0; background: #fff3e0;">
+                                <strong>犀利点评：</strong><br>
+                                ${data.comprehensive_risk_score > 60 ? '这票有点悬啊兄弟！庄家可能在高位出货，' : '这个标的还算靠谱，'}
+                                ${data.volume_analysis?.ratio > 1.5 ? '成交量放大明显，资金在博弈' : '成交量一般，散户居多'}。
+                                
+                                <br><br><strong>内幕分析：</strong><br>
+                                从龙虎榜看，${data.institutional_activity > 50 ? '机构在暗中布局' : '散户韭菜较多'}，
+                                ${data.price_manipulation_risk > 30 ? '小心庄家割韭菜！' : '走势相对健康'}
+                                
+                                <br><br><strong>建议操作：</strong> 
+                                <span style="color: #FF5722; font-weight: bold;">
+                                    ${data.dark_rating || (data.comprehensive_risk_score <= 30 ? '可以埋伏' : data.comprehensive_risk_score <= 60 ? '观望为主' : '跑路要紧')}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analysis-content">
+                        <strong>📊 综合评估结果：</strong><br>
+                        ${data.analysis_summary?.overall_assessment || '评估中...'}
+                        
+                        <br><br><strong>💡 投资建议：</strong><br>
+                        ${data.investment_advice || '建议生成中...'}
+                        
+                        <br><br><strong>⏰ 分析时间：</strong><br>
+                        ${new Date(data.generated_at).toLocaleString() || ''}
+                    </div>
+                `;
+                
+                document.getElementById('comprehensiveContent').innerHTML = comprehensiveHTML;
+                
+            } catch (error) {
+                console.error('综合分析失败:', error);
+                document.getElementById('comprehensiveContent').innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        综合分析失败，请重试
+                    </div>
+                `;
+            }
+        }
+
+        // Check for uploaded logo and update
+        async function checkAndUpdateLogo() {
+            try {
+                // Check if custom logo exists
+                const logoImg = new Image();
+                logoImg.onload = function() {
+                    // Logo exists, replace the emoji with image
+                    const appLogo = document.getElementById('appLogo');
+                    appLogo.innerHTML = `<img src="/assets/logo.png" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: 6px;">`;
+                };
+                logoImg.onerror = function() {
+                    // Keep default emoji logo
+                    console.log('Using default logo');
+                };
+                logoImg.src = '/assets/logo.png?' + new Date().getTime(); // Add cache busting
+                
+            } catch (error) {
+                console.log('Logo check failed, using default');
+            }
+        }
+
+        // Initialize with sample stock if in development
+        window.addEventListener('load', () => {
+            console.log('Prism Expert Dashboard 已加载');
+            checkAndUpdateLogo();
+            // 可以在这里设置一个默认的股票代码用于演示
+            // document.getElementById('stockInput').value = '000001';
+            // analyzeStock();
+        });
+    </script>
+</body>
+</html>
