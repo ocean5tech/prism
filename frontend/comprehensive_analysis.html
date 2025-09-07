@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>综合分析 | FinanceIQ分析系统</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-blue: #4A90E2;
+            --success-green: #2ECC71;
+            --danger-red: #E74C3C;
+            --warning-orange: #F39C12;
+            --light-gray: #F8F9FA;
+            --medium-gray: #6C757D;
+            --dark-gray: #495057;
+            --border-light: #DEE2E6;
+            --white: #FFFFFF;
+            --text-primary: #212529;
+            --text-secondary: #6C757D;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--light-gray);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 左侧导航栏 */
+        .sidebar {
+            width: 280px;
+            background: var(--white);
+            border-right: 1px solid var(--border-light);
+            padding: 2rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-blue);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .logo-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: -0.25rem;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-item:hover {
+            background: var(--light-gray);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .nav-item i {
+            width: 18px;
+            text-align: center;
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .development-notice {
+            background: linear-gradient(135deg, var(--primary-blue), #3A7BC8);
+            color: white;
+            padding: 3rem 2rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+        }
+
+        .development-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        .development-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .development-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+
+        .features-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .feature-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--light-gray);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--primary-blue);
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .coming-soon-badge {
+            display: inline-block;
+            background: var(--warning-orange);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        .roadmap-section {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 2rem;
+        }
+
+        .roadmap-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .roadmap-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .roadmap-item:last-child {
+            border-bottom: none;
+        }
+
+        .roadmap-phase {
+            background: var(--primary-blue);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .roadmap-content {
+            flex: 1;
+        }
+
+        .roadmap-feature {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .roadmap-desc {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .features-preview {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧导航栏 -->
+        <nav class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div>
+                    <div class="logo-text">FinanceIQ</div>
+                    <div class="logo-subtitle">Smart Stock Analysis</div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">分析面板</div>
+                <a href="/dashboard" class="nav-item">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>主页</span>
+                </a>
+                <a href="/financial" class="nav-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>财务报表</span>
+                </a>
+                <a href="/analysis" class="nav-item active">
+                    <i class="fas fa-brain"></i>
+                    <span>综合分析</span>
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">工具</div>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-calculator"></i>
+                    <span>估值计算器</span>
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>投资组合</span>
+                </a>
+            </div>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <div class="development-notice">
+                <div class="development-icon">
+                    <i class="fas fa-cogs"></i>
+                </div>
+                <h1 class="development-title">综合分析功能</h1>
+                <p class="development-subtitle">正在紧张开发中，即将为您带来更强大的智能分析体验</p>
+            </div>
+
+            <div class="features-preview">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3 class="feature-title">AI智能评分</h3>
+                    <p class="feature-description">基于机器学习算法，综合财务数据、技术指标、市场情绪等多维度信息，为股票提供智能评分和投资建议。</p>
+                    <span class="coming-soon-badge">即将上线</span>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-network"></i>
+                    </div>
+                    <h3 class="feature-title">同行业对比</h3>
+                    <p class="feature-description">将目标股票与同行业其他公司进行全面对比分析，帮助您识别行业内的投资机会和风险。</p>
+                    <span class="coming-soon-badge">即将上线</span>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <h3 class="feature-title">智能预测</h3>
+                    <p class="feature-description">利用深度学习模型分析历史数据趋势，提供股价走势预测和关键支撑阻力位分析。</p>
+                    <span class="coming-soon-badge">即将上线</span>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="feature-title">风险评估</h3>
+                    <p class="feature-description">多层次风险分析模型，包括市场风险、流动性风险、基本面风险等，为投资决策提供风险量化指标。</p>
+                    <span class="coming-soon-badge">即将上线</span>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h3 class="feature-title">投资策略推荐</h3>
+                    <p class="feature-description">根据您的风险偏好和投资目标，智能推荐适合的投资策略和仓位配置建议。</p>
+                    <span class="coming-soon-badge">即将上线</span>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-microscope"></i>
+                    </div>
+                    <h3 class="feature-title">深度研报生成</h3>
+                    <p class="feature-description">自动生成专业级股票分析报告，包含完整的投资逻辑、风险提示和操作建议。</p>
+                    <span class="coming-soon-badge">即将上线</span>
+                </div>
+            </div>
+
+            <div class="roadmap-section">
+                <h2 class="roadmap-title">
+                    <i class="fas fa-road"></i>
+                    开发路线图
+                </h2>
+
+                <div class="roadmap-item">
+                    <div class="roadmap-phase">Phase 1</div>
+                    <div class="roadmap-content">
+                        <div class="roadmap-feature">AI智能评分系统</div>
+                        <div class="roadmap-desc">预计2025年10月上线，提供基于多因子模型的智能评分功能</div>
+                    </div>
+                </div>
+
+                <div class="roadmap-item">
+                    <div class="roadmap-phase">Phase 2</div>
+                    <div class="roadmap-content">
+                        <div class="roadmap-feature">同行业对比分析</div>
+                        <div class="roadmap-desc">预计2025年11月上线，集成行业数据库，提供横向对比功能</div>
+                    </div>
+                </div>
+
+                <div class="roadmap-item">
+                    <div class="roadmap-phase">Phase 3</div>
+                    <div class="roadmap-content">
+                        <div class="roadmap-feature">智能预测模型</div>
+                        <div class="roadmap-desc">预计2025年12月上线，基于深度学习的价格趋势预测</div>
+                    </div>
+                </div>
+
+                <div class="roadmap-item">
+                    <div class="roadmap-phase">Phase 4</div>
+                    <div class="roadmap-content">
+                        <div class="roadmap-feature">风险管理工具</div>
+                        <div class="roadmap-desc">预计2026年1月上线，提供全面的投资风险评估和管理工具</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

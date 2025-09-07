@@ -40,37 +40,62 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
 
-# 根路由 - 直接访问前端
+# 根路由 - 直接访问FinanceIQ仪表盘
 @app.get("/")
 async def read_root():
-    """重定向到前端页面"""
+    """重定向到FinanceIQ智能分析仪表盘"""
+    from fastapi.responses import FileResponse
+    return FileResponse('frontend/financeiq_dashboard.html')
+
+# 新的3页面路由结构 (使用FinanceIQ风格)
+@app.get("/dashboard")
+async def main_dashboard():
+    """主页 - 股票基本信息，技术面信息，消息及新闻一览"""
+    from fastapi.responses import FileResponse
+    response = FileResponse('frontend/financeiq_dashboard.html')
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+@app.get("/financial")
+async def financial_reports():
+    """财报页面 - 上季和当季财务数据"""
+    from fastapi.responses import FileResponse
+    response = FileResponse('frontend/financial_reports.html')
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+@app.get("/analysis")
+async def comprehensive_analysis():
+    """综合分析页面 - 开发中"""
+    from fastapi.responses import FileResponse
+    response = FileResponse('frontend/comprehensive_analysis.html')
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
+# 保留原有路由做兼容
+@app.get("/financeiq")
+async def financeiq_dashboard():
+    """FinanceIQ仪表盘页面 (兼容)"""
+    from fastapi.responses import FileResponse
+    return FileResponse('frontend/financeiq_dashboard.html')
+
+@app.get("/styles")
+async def style_showcase():
+    """访问设计风格展示页面"""
+    from fastapi.responses import FileResponse
+    return FileResponse('frontend/style_showcase.html')
+
+@app.get("/home")
+async def home_page():
+    """访问主页 - 包含所有仪表盘入口"""
     from fastapi.responses import FileResponse
     return FileResponse('frontend/index.html')
-
-# 仪表盘路由
-@app.get("/dashboard")
-async def dashboard():
-    """访问仪表盘页面"""
-    from fastapi.responses import FileResponse
-    return FileResponse('frontend/dashboard.html')
-
-@app.get("/dashboard_v2")
-async def dashboard_v2():
-    """访问优化后的仪表盘页面"""
-    from fastapi.responses import FileResponse
-    return FileResponse('frontend/dashboard_v2.html')
-
-@app.get("/expert")
-async def expert_dashboard():
-    """访问专家分析仪表盘页面"""
-    from fastapi.responses import FileResponse
-    return FileResponse('frontend/expert_dashboard.html')
-
-@app.get("/upload")
-async def upload_page():
-    """访问文件上传页面"""
-    from fastapi.responses import FileResponse
-    return FileResponse('frontend/upload.html')
 
 # 数据模型
 class ArticleRequest(BaseModel):
@@ -1084,6 +1109,184 @@ async def get_announcements(stock_code: str, limit: int = 10):
             "announcements": []
         }
 
+# 财务指标API
+@app.get("/api/stocks/{stock_code}/financial/detailed")
+async def get_detailed_financial_data(stock_code: str):
+    """获取详细财务数据，包含完整财报信息"""
+    try:
+        # 获取基础股票数据
+        stock_data = await fetch_real_stock_data(stock_code)
+        financial_data = stock_data.get("financial", {})
+        
+        # 扩展财务数据，添加更多指标
+        detailed_financial = await extract_comprehensive_financial_data(stock_code, financial_data)
+        
+        return {
+            "stock_code": stock_code,
+            "comprehensive_financial_data": detailed_financial,
+            "data_source": "comprehensive_extraction",
+            "extracted_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"获取详细财务数据失败: {stock_code} - {e}")
+        raise HTTPException(status_code=500, detail=f"获取详细财务数据失败: {str(e)}")
+
+async def extract_comprehensive_financial_data(stock_code: str, base_financial_data: dict) -> dict:
+    """提取综合财务数据，包含所有可获取的财报指标"""
+    
+    financial_indicators = base_financial_data.get("financial_indicators", [])
+    
+    # 完整的财务指标提取
+    comprehensive_data = {
+        "revenue_metrics": {},
+        "profit_metrics": {},
+        "cash_flow_metrics": {},
+        "balance_sheet_metrics": {},
+        "efficiency_ratios": {},
+        "growth_rates": {},
+        "period_comparison": {}
+    }
+    
+    # 收入相关指标
+    revenue_indicators = ["营业总收入", "营业收入", "主营业务收入", "其他业务收入"]
+    for indicator in financial_indicators:
+        indicator_name = indicator.get("指标", "")
+        if any(rev_indicator in indicator_name for rev_indicator in revenue_indicators):
+            comprehensive_data["revenue_metrics"][indicator_name] = {
+                quarter: value for quarter, value in indicator.items() 
+                if quarter != "指标" and value is not None
+            }
+    
+    # 利润相关指标  
+    profit_indicators = ["归母净利润", "扣非净利润", "毛利润", "营业利润", "利润总额", "净利润"]
+    for indicator in financial_indicators:
+        indicator_name = indicator.get("指标", "")
+        if any(profit_indicator in indicator_name for profit_indicator in profit_indicators):
+            comprehensive_data["profit_metrics"][indicator_name] = {
+                quarter: value for quarter, value in indicator.items()
+                if quarter != "指标" and value is not None
+            }
+    
+    # 现金流相关指标
+    cashflow_indicators = ["经营现金流量净额", "投资现金流量净额", "筹资现金流量净额", "现金及现金等价物净增加额"]
+    for indicator in financial_indicators:
+        indicator_name = indicator.get("指标", "")
+        if any(cf_indicator in indicator_name for cf_indicator in cashflow_indicators):
+            comprehensive_data["cash_flow_metrics"][indicator_name] = {
+                quarter: value for quarter, value in indicator.items()
+                if quarter != "指标" and value is not None
+            }
+    
+    # 资产负债表指标
+    balance_indicators = ["总资产", "总负债", "股东权益", "流动资产", "流动负债", "货币资金", "应收账款", "存货"]
+    for indicator in financial_indicators:
+        indicator_name = indicator.get("指标", "")
+        if any(balance_indicator in indicator_name for balance_indicator in balance_indicators):
+            comprehensive_data["balance_sheet_metrics"][indicator_name] = {
+                quarter: value for quarter, value in indicator.items()
+                if quarter != "指标" and value is not None
+            }
+    
+    # 效率比率
+    efficiency_indicators = ["净资产收益率", "总资产收益率", "毛利率", "净利率", "资产负债率"]
+    for indicator in financial_indicators:
+        indicator_name = indicator.get("指标", "")
+        if any(eff_indicator in indicator_name for eff_indicator in efficiency_indicators):
+            comprehensive_data["efficiency_ratios"][indicator_name] = {
+                quarter: value for quarter, value in indicator.items()
+                if quarter != "指标" and value is not None
+            }
+    
+    # 计算同比增长率
+    for category_name, category_data in comprehensive_data.items():
+        if category_name == "period_comparison":
+            continue
+            
+        for metric_name, metric_data in category_data.items():
+            quarters = sorted(metric_data.keys())
+            growth_rates = {}
+            
+            for i, quarter in enumerate(quarters):
+                if i >= 4:  # 需要至少4个季度数据才能计算同比
+                    prev_year_quarter = quarters[i-4] 
+                    current_value = metric_data[quarter]
+                    prev_value = metric_data.get(prev_year_quarter)
+                    
+                    if current_value and prev_value and prev_value != 0:
+                        growth_rate = ((current_value - prev_value) / prev_value) * 100
+                        growth_rates[quarter] = growth_rate
+            
+            if growth_rates:
+                comprehensive_data["growth_rates"][f"{metric_name}_同比增长率"] = growth_rates
+    
+    # 期间对比分析
+    latest_quarters = sorted([q for category in comprehensive_data.values() 
+                             for metric in category.values() 
+                             for q in metric.keys() if q.isdigit()], reverse=True)[:8]
+    
+    if latest_quarters:
+        comprehensive_data["period_comparison"] = {
+            "analysis_periods": latest_quarters,
+            "comparison_summary": await generate_period_comparison_summary(comprehensive_data, latest_quarters)
+        }
+    
+    return comprehensive_data
+
+async def generate_period_comparison_summary(financial_data: dict, quarters: list) -> dict:
+    """生成期间对比摘要"""
+    if len(quarters) < 2:
+        return {"message": "数据不足以进行对比分析"}
+    
+    latest_quarter = quarters[0]
+    prev_quarter = quarters[1] if len(quarters) > 1 else None
+    year_ago_quarter = quarters[4] if len(quarters) > 4 else None
+    
+    summary = {
+        "latest_quarter": latest_quarter,
+        "comparison_periods": {
+            "previous_quarter": prev_quarter,
+            "year_ago_quarter": year_ago_quarter
+        },
+        "key_changes": []
+    }
+    
+    # 分析关键指标变化
+    revenue_metrics = financial_data.get("revenue_metrics", {})
+    profit_metrics = financial_data.get("profit_metrics", {})
+    
+    for metric_name, metric_data in {**revenue_metrics, **profit_metrics}.items():
+        if latest_quarter in metric_data:
+            latest_value = metric_data[latest_quarter]
+            
+            # 环比变化
+            if prev_quarter and prev_quarter in metric_data:
+                prev_value = metric_data[prev_quarter]
+                if prev_value != 0 and isinstance(latest_value, (int, float)) and isinstance(prev_value, (int, float)):
+                    qoq_change = ((float(latest_value) - float(prev_value)) / float(prev_value)) * 100
+                    summary["key_changes"].append({
+                        "metric": metric_name,
+                        "period": "环比",
+                        "change_pct": qoq_change,
+                        "direction": "上升" if qoq_change > 0 else "下降",
+                        "significance": "显著" if abs(qoq_change) > 20 else "温和" if abs(qoq_change) > 5 else "平稳"
+                    })
+            
+            # 同比变化  
+            if year_ago_quarter and year_ago_quarter in metric_data:
+                year_ago_value = metric_data[year_ago_quarter]
+                if year_ago_value != 0 and isinstance(latest_value, (int, float)) and isinstance(year_ago_value, (int, float)):
+                    yoy_change = ((float(latest_value) - float(year_ago_value)) / float(year_ago_value)) * 100
+                    summary["key_changes"].append({
+                        "metric": metric_name,
+                        "period": "同比", 
+                        "change_pct": yoy_change,
+                        "direction": "增长" if yoy_change > 0 else "下降",
+                        "significance": "强劲" if abs(yoy_change) > 30 else "稳定" if abs(yoy_change) > 10 else "微弱"
+                    })
+    
+    return summary
+
 # 文章生成工作流
 @app.post("/api/generate-articles", response_model=TaskResponse)
 async def generate_articles(request: ArticleRequest):
@@ -1366,4 +1569,4 @@ def format_large_number(num):
 if __name__ == "__main__":
     import uvicorn
     print("🚀 启动Prism测试服务器 (使用真实股票数据完整版)...")
-    uvicorn.run(app, host="0.0.0.0", port=3006, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=3007, log_level="info")

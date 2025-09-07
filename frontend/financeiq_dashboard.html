@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanceIQ - Smart Stock Analysis</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-blue: #4A90E2;
+            --success-green: #2ECC71;
+            --danger-red: #E74C3C;
+            --warning-orange: #F39C12;
+            --light-gray: #F8F9FA;
+            --medium-gray: #6C757D;
+            --dark-gray: #495057;
+            --border-light: #DEE2E6;
+            --white: #FFFFFF;
+            --text-primary: #212529;
+            --text-secondary: #6C757D;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--light-gray);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 左侧导航栏 */
+        .sidebar {
+            width: 280px;
+            background: var(--white);
+            border-right: 1px solid var(--border-light);
+            padding: 2rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-blue);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .logo-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: -0.25rem;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: var(--light-gray);
+            color: var(--primary-blue);
+        }
+
+        .market-status {
+            background: var(--light-gray);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-top: 2rem;
+        }
+
+        .market-status h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        .status-value.positive {
+            color: var(--success-green);
+        }
+
+        /* 主内容区域 */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        /* 顶部搜索区域 */
+        .header {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .header-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .search-input {
+            flex: 1;
+            max-width: 400px;
+            padding: 0.75rem 1rem;
+            border: 2px solid var(--border-light);
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-blue);
+        }
+
+        .search-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .search-btn:hover {
+            background: #357ABD;
+        }
+
+        .popular-stocks {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .popular-stocks-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            align-self: center;
+        }
+
+        .stock-tag {
+            padding: 0.4rem 0.8rem;
+            background: var(--light-gray);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .stock-tag:hover {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        /* 主要内容布局 */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 2rem;
+        }
+
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* 股票信息卡片 */
+        .stock-info-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .stock-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+
+        .stock-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .stock-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--primary-blue);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .stock-details h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .stock-details p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .stock-price {
+            text-align: right;
+        }
+
+        .price {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .price-change {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            justify-content: flex-end;
+            margin-top: 0.5rem;
+        }
+
+        .change-positive {
+            color: var(--success-green);
+        }
+
+        .change-negative {
+            color: var(--danger-red);
+        }
+
+        .buy-button {
+            background: var(--success-green);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+
+        /* 关键指标网格 */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-item {
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* 财务指标卡片 */
+        .financial-metrics-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .metrics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .metrics-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .financial-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+
+        .financial-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .metric-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .metric-icon.revenue {
+            background: var(--primary-blue);
+        }
+
+        .metric-icon.profit {
+            background: var(--success-green);
+        }
+
+        .metric-icon.debt {
+            background: var(--warning-orange);
+        }
+
+        .metric-icon.cash {
+            background: #8E44AD;
+        }
+
+        .metric-info h4 {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-info .value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* 右侧面板 */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* AI分析卡片 */
+        .ai-analysis-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .ai-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .ai-icon {
+            color: var(--primary-blue);
+        }
+
+        .recommendation {
+            background: var(--success-green);
+            color: white;
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .recommendation-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .recommendation-text {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .analysis-details {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .detail-value.moderate {
+            color: var(--warning-orange);
+        }
+
+        .detail-value.strong {
+            color: var(--success-green);
+        }
+
+        /* 最近搜索 */
+        .recent-searches {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .recent-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .recent-item:last-child {
+            border-bottom: none;
+        }
+
+        .recent-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--light-gray);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .recent-info {
+            flex: 1;
+        }
+
+        .recent-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .recent-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* 加载状态 */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .financial-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧导航栏 -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div>
+                    <div class="logo-text">FinanceIQ</div>
+                    <div class="logo-subtitle">Smart Stock Analysis</div>
+                </div>
+            </div>
+
+            <nav>
+                <div class="nav-section">
+                    <div class="nav-title">Navigation</div>
+                    <a href="#" class="nav-item active">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </a>
+                </div>
+
+                <div class="market-status">
+                    <h4>MARKET STATUS</h4>
+                    <div class="status-item">
+                        <span>Market</span>
+                        <span class="status-value positive">Open</span>
+                    </div>
+                    <div class="status-item">
+                        <span>S&P 500</span>
+                        <span class="status-value positive">+0.8%</span>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 顶部搜索区域 -->
+            <header class="header">
+                <h1 class="header-title">Financial Dashboard</h1>
+                <p class="header-subtitle">Enter a stock symbol to get comprehensive financial analysis with AI insights</p>
+                
+                <div class="search-container">
+                    <input type="text" class="search-input" id="stockInput" placeholder="输入股票代码 (例: 002222)" maxlength="6">
+                    <button class="search-btn" onclick="analyzeStock()">
+                        <i class="fas fa-search"></i>
+                        Analyze
+                    </button>
+                </div>
+
+                <div class="popular-stocks">
+                    <span class="popular-stocks-label">Popular stocks:</span>
+                    <span class="stock-tag" onclick="searchStock('000001')">000001</span>
+                    <span class="stock-tag" onclick="searchStock('000002')">000002</span>
+                    <span class="stock-tag" onclick="searchStock('002222')">002222</span>
+                    <span class="stock-tag" onclick="searchStock('000858')">000858</span>
+                    <span class="stock-tag" onclick="searchStock('600036')">600036</span>
+                </div>
+            </header>
+
+            <!-- 加载状态 -->
+            <div class="loading" id="loadingState">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                <p>正在分析股票数据...</p>
+            </div>
+
+            <!-- 仪表盘网格 -->
+            <div class="dashboard-grid" id="dashboardContent" style="display: none;">
+                <!-- 主面板 -->
+                <div class="main-panel">
+                    <!-- 股票信息卡片 -->
+                    <div class="stock-info-card">
+                        <div class="stock-header">
+                            <div class="stock-title">
+                                <div class="stock-icon">
+                                    <i class="fas fa-building" id="stockIcon"></i>
+                                </div>
+                                <div class="stock-details">
+                                    <h2 id="stockName">Loading...</h2>
+                                    <p>Market Cap: <span id="marketCap">$0</span></p>
+                                </div>
+                            </div>
+                            <div class="stock-price">
+                                <div class="price" id="stockPrice">$0</div>
+                                <div class="price-change">
+                                    <span id="priceChange">0.00%</span>
+                                    <button class="buy-button">BUY</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 关键指标 -->
+                        <div class="metrics-grid">
+                            <div class="metric-item">
+                                <div class="metric-label">P/E RATIO</div>
+                                <div class="metric-value" id="peRatio">--</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">BETA</div>
+                                <div class="metric-value" id="beta">--</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">DIVIDEND</div>
+                                <div class="metric-value" id="dividend">--</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">TARGET PRICE</div>
+                                <div class="metric-value" id="targetPrice">--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 财务指标卡片 -->
+                    <div class="financial-metrics-card">
+                        <div class="metrics-header">
+                            <h3 class="metrics-title">Financial Metrics</h3>
+                        </div>
+
+                        <div class="financial-grid">
+                            <div class="financial-item">
+                                <div class="metric-icon revenue">
+                                    <i class="fas fa-dollar-sign"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <h4>Revenue</h4>
+                                    <div class="value" id="revenue">$0</div>
+                                </div>
+                            </div>
+                            <div class="financial-item">
+                                <div class="metric-icon profit">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <h4>Profit Margin</h4>
+                                    <div class="value" id="profitMargin">0%</div>
+                                </div>
+                            </div>
+                            <div class="financial-item">
+                                <div class="metric-icon debt">
+                                    <i class="fas fa-balance-scale"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <h4>Debt-to-Equity</h4>
+                                    <div class="value" id="debtEquity">0</div>
+                                </div>
+                            </div>
+                            <div class="financial-item">
+                                <div class="metric-icon cash">
+                                    <i class="fas fa-coins"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <h4>Free Cash Flow</h4>
+                                    <div class="value" id="cashFlow">$0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧面板 -->
+                <div class="side-panel">
+                    <!-- AI分析卡片 -->
+                    <div class="ai-analysis-card">
+                        <div class="ai-header">
+                            <i class="fas fa-robot ai-icon"></i>
+                            <h3>AI Analysis</h3>
+                        </div>
+
+                        <div class="recommendation">
+                            <div class="recommendation-badge">
+                                <i class="fas fa-check-circle"></i>
+                                <span id="recommendation">BUY</span>
+                            </div>
+                            <div class="recommendation-text">Investment Recommendation</div>
+                        </div>
+
+                        <div class="analysis-details">
+                            <div class="detail-item">
+                                <span class="detail-label">Risk Level</span>
+                                <span class="detail-value moderate" id="riskLevel">Moderate</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Target Price</span>
+                                <span class="detail-value" id="aiTargetPrice">$0</span>
+                            </div>
+                            <div class="detail-item">
+                                <span class="detail-label">Analyst Rating</span>
+                                <span class="detail-value strong" id="analystRating">Strong Buy</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-light);">
+                            <h4 style="margin-bottom: 0.5rem;">Detailed Analysis</h4>
+                            <p id="detailedAnalysis" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
+                                正在加载AI分析...
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 最近搜索 -->
+                    <div class="recent-searches">
+                        <h3 style="margin-bottom: 1rem;">Recent Searches</h3>
+                        <div class="recent-item">
+                            <div class="recent-icon">002222</div>
+                            <div class="recent-info">
+                                <div class="recent-name">福晶科技</div>
+                                <div class="recent-subtitle">光学光电子</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE = 'http://35.77.54.203:3003';
+        
+        // 搜索股票函数
+        function searchStock(code) {
+            document.getElementById('stockInput').value = code;
+            analyzeStock();
+        }
+
+        // 数据格式化函数
+        function formatNumber(num, decimals = 2) {
+            if (num === null || num === undefined || num === '') return '--';
+            
+            const number = parseFloat(num);
+            if (isNaN(number)) return '--';
+            
+            if (Math.abs(number) >= 1e8) {
+                return (number / 1e8).toFixed(decimals) + '亿';
+            } else if (Math.abs(number) >= 1e4) {
+                return (number / 1e4).toFixed(decimals) + '万';
+            }
+            return number.toFixed(decimals);
+        }
+
+        function formatPercent(num) {
+            if (num === null || num === undefined || num === '') return '--';
+            const number = parseFloat(num);
+            if (isNaN(number)) return '--';
+            return number.toFixed(2) + '%';
+        }
+
+        // 主要分析函数
+        async function analyzeStock() {
+            const stockCode = document.getElementById('stockInput').value.trim();
+            
+            if (!stockCode || stockCode.length !== 6) {
+                alert('请输入有效的6位股票代码');
+                return;
+            }
+
+            // 显示加载状态
+            document.getElementById('loadingState').classList.add('show');
+            document.getElementById('dashboardContent').style.display = 'none';
+
+            try {
+                // 并行获取数据
+                const [basicInfo, fundamentalAnalysis, technicalData] = await Promise.allSettled([
+                    fetch(`${API_BASE}/api/stock-info/${stockCode}`).then(r => r.json()),
+                    fetch(`${API_BASE}/stocks/${stockCode}/analysis/fundamental`).then(r => r.json()),
+                    fetch(`${API_BASE}/stocks/${stockCode}/analysis/technical`).then(r => r.json())
+                ]);
+
+                // 渲染数据
+                renderStockData(basicInfo.status === 'fulfilled' ? basicInfo.value : null);
+                renderFinancialData(fundamentalAnalysis.status === 'fulfilled' ? fundamentalAnalysis.value : null);
+                renderTechnicalData(technicalData.status === 'fulfilled' ? technicalData.value : null);
+
+                // 隐藏加载状态，显示内容
+                document.getElementById('loadingState').classList.remove('show');
+                document.getElementById('dashboardContent').style.display = 'grid';
+
+            } catch (error) {
+                console.error('获取数据失败:', error);
+                alert('获取数据失败，请检查股票代码是否正确');
+                document.getElementById('loadingState').classList.remove('show');
+            }
+        }
+
+        // 渲染股票基础数据
+        function renderStockData(data) {
+            if (!data || !data.stock_info) {
+                return;
+            }
+
+            const info = data.stock_info;
+            document.getElementById('stockName').textContent = info.股票简称 || 'N/A';
+            document.getElementById('stockPrice').textContent = '￥' + (info.最新 || '0');
+            document.getElementById('marketCap').textContent = '￥' + formatNumber(info.总市值 || 0);
+            
+            // 假设数据 - 实际应该从API获取
+            document.getElementById('peRatio').textContent = '15.2';
+            document.getElementById('beta').textContent = '1.20';
+            document.getElementById('dividend').textContent = '0.00%';
+            document.getElementById('targetPrice').textContent = '￥' + formatNumber((info.最新 || 0) * 1.1);
+        }
+
+        // 渲染财务数据
+        function renderFinancialData(data) {
+            if (!data || !data.financial_indicators) {
+                return;
+            }
+
+            const indicators = data.financial_indicators;
+            const latestData = {};
+            
+            // 提取最新季度数据
+            indicators.forEach(indicator => {
+                const periods = Object.keys(indicator).filter(key => key.match(/^\d{8}$/)).sort().reverse();
+                if (periods.length > 0) {
+                    latestData[indicator.指标] = indicator[periods[0]];
+                }
+            });
+
+            // 更新财务指标
+            document.getElementById('revenue').textContent = '￥' + formatNumber(latestData['营业总收入']);
+            document.getElementById('profitMargin').textContent = formatPercent(latestData['销售净利率']);
+            document.getElementById('debtEquity').textContent = formatNumber(latestData['资产负债率'], 2);
+            document.getElementById('cashFlow').textContent = '￥' + formatNumber(latestData['经营现金流量净额']);
+
+            // 更新AI分析
+            const roe = latestData['净资产收益率(ROE)'] || 0;
+            const profitGrowth = latestData['归属母公司净利润增长率'] || 0;
+            
+            let recommendation = 'HOLD';
+            let riskLevel = 'Moderate';
+            let analystRating = 'Hold';
+            
+            if (roe > 15 && profitGrowth > 10) {
+                recommendation = 'BUY';
+                analystRating = 'Strong Buy';
+                riskLevel = 'Low';
+            } else if (roe < 5 || profitGrowth < -10) {
+                recommendation = 'SELL';
+                analystRating = 'Sell';
+                riskLevel = 'High';
+            }
+
+            document.getElementById('recommendation').textContent = recommendation;
+            document.getElementById('riskLevel').textContent = riskLevel;
+            document.getElementById('analystRating').textContent = analystRating;
+            
+            // 更新推荐卡片颜色
+            const recCard = document.querySelector('.recommendation');
+            recCard.className = 'recommendation';
+            if (recommendation === 'BUY') {
+                recCard.style.background = 'var(--success-green)';
+            } else if (recommendation === 'SELL') {
+                recCard.style.background = 'var(--danger-red)';
+            } else {
+                recCard.style.background = 'var(--warning-orange)';
+            }
+
+            // 生成详细分析
+            const analysis = `该股票显示${roe > 10 ? '良好' : '一般'}的盈利能力，ROE为${formatPercent(roe)}。${profitGrowth > 0 ? '净利润保持增长' : '净利润出现下滑'}，增长率为${formatPercent(profitGrowth)}。基于当前财务指标，建议${recommendation === 'BUY' ? '买入' : recommendation === 'SELL' ? '卖出' : '持有'}。`;
+            document.getElementById('detailedAnalysis').textContent = analysis;
+        }
+
+        // 渲染技术数据
+        function renderTechnicalData(data) {
+            if (!data || !data.real_time_data) {
+                return;
+            }
+
+            const realtime = data.real_time_data;
+            const changePercent = realtime.涨幅 || 0;
+            
+            const priceChangeElement = document.getElementById('priceChange');
+            priceChangeElement.textContent = (changePercent > 0 ? '+' : '') + formatPercent(changePercent);
+            
+            if (changePercent > 0) {
+                priceChangeElement.className = 'change-positive';
+            } else if (changePercent < 0) {
+                priceChangeElement.className = 'change-negative';
+            }
+
+            document.getElementById('aiTargetPrice').textContent = '￥' + formatNumber((realtime.最新 || 0) * 1.15);
+        }
+
+        // 页面加载完成时的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 回车键触发分析
+            document.getElementById('stockInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    analyzeStock();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
