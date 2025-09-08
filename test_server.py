@@ -40,12 +40,12 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="frontend"), name="static")
 app.mount("/assets", StaticFiles(directory="frontend/assets"), name="assets")
 
-# 根路由 - 直接访问FinanceIQ仪表盘
+# 根路由 - 重定向到财务报表页面作为默认首页
 @app.get("/")
 async def read_root():
-    """重定向到FinanceIQ智能分析仪表盘"""
-    from fastapi.responses import FileResponse
-    return FileResponse('frontend/financeiq_dashboard.html')
+    """重定向到财务报表页面（默认首页）"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url='/financial', status_code=302)
 
 # 新的3页面路由结构 (使用FinanceIQ风格)
 @app.get("/dashboard")
@@ -166,146 +166,61 @@ async def fetch_real_stock_data(stock_code: str) -> Dict[str, Any]:
     
     async with aiohttp.ClientSession() as session:
         try:
-            # 获取基本面数据
-            async with session.get(f"{base_url}/stocks/{stock_code}/analysis/fundamental") as response:
+            # 获取综合数据
+            async with session.get(f"{base_url}/api/comprehensive-data/{stock_code}") as response:
                 if response.status == 200:
-                    fundamental_raw = await response.json()
+                    comprehensive_data = await response.json()
                 else:
-                    fundamental_raw = {}
+                    comprehensive_data = {}
             
-            # 获取技术面数据
-            async with session.get(f"{base_url}/stocks/{stock_code}/analysis/technical") as response:
-                if response.status == 200:
-                    technical_raw = await response.json()
-                else:
-                    technical_raw = {}
+            # 从综合数据中提取信息 - 正确处理中文字段名
+            logger.info(f"获取到的综合数据: {stock_code} - 有 {len(comprehensive_data)} 个字段")
+            basic_info = comprehensive_data.get("basic_info", {})
+            financial_metrics = comprehensive_data.get("financial_metrics", {})
+            latest_financial = financial_metrics.get("2025-06-30", {}) if financial_metrics else {}
+            logger.info(f"基础信息: {basic_info}")
+            logger.info(f"最新财务: {latest_financial}")
             
-            # 处理基本面数据
-            basic_info = fundamental_raw.get("basic_info", {})
+            # 使用正确的中文字段名
             fundamental_data = {
                 "source": "fundamental_analysis",
                 "stock_code": stock_code,
-                "stock_name": fundamental_raw.get("stock_name", "未知股票"),
+                "stock_name": basic_info.get("股票简称", "未知股票"),
                 "current_price": basic_info.get("最新", 0),
-                "market_cap": basic_info.get("总市值", 0),
-                "circulating_market_cap": basic_info.get("流通市值", 0),
-                "pe_ratio": 0,  # 基本面数据中没有PE，从技术面获取
+                "market_cap": round(basic_info.get("总市值", 0) / 100000000, 1),  # 转为亿元并保留1位小数
+                "circulating_market_cap": basic_info.get("流通市值", 0) / 100000000,  # 转为亿元
+                "pe_ratio": 0,  # API数据中没有直接的PE比率
                 "industry": basic_info.get("行业", "未知行业"),
-                "listing_date": basic_info.get("上市时间", ""),
-                "total_shares": basic_info.get("总股本", 0),
-                "circulating_shares": basic_info.get("流通股", 0),
                 "updated_at": datetime.now().isoformat()
             }
-            
-            # 处理技术面数据 - 提取更多指标
-            real_time_data = technical_raw.get("real_time_data", {})
-            analysis_data = technical_raw.get("analysis_data", {})
-            k_line_data = technical_raw.get("k_line_data", [])
-            
-            # 获取最新一天的K线数据
-            latest_k = k_line_data[-1] if k_line_data else {}
             
             technical_data = {
                 "source": "technical_analysis", 
                 "stock_code": stock_code,
-                "analysis_type": technical_raw.get("analysis_type", "技术分析"),
-                "current_price": real_time_data.get("最新", analysis_data.get("current_price", 0)),
-                "price_change": analysis_data.get("price_change", real_time_data.get("涨跌", 0)),
-                "price_change_pct": analysis_data.get("price_change_pct", real_time_data.get("涨幅", 0)),
-                "volume": analysis_data.get("volume", real_time_data.get("总手", 0)),
-                "turnover": real_time_data.get("金额", 0),
-                "turnover_rate": analysis_data.get("turnover_rate", real_time_data.get("换手", 0)),
-                "volume_ratio": real_time_data.get("量比", 0),
-                "pe_ratio": technical_raw.get("technical_indicators", {}).get("市盈率", 0),
-                "pb_ratio": technical_raw.get("technical_indicators", {}).get("市净率", 0),
-                "high_price": analysis_data.get("recent_high", real_time_data.get("最高", latest_k.get("最高", 0))),
-                "low_price": analysis_data.get("recent_low", real_time_data.get("最低", latest_k.get("最低", 0))),
-                "open_price": real_time_data.get("今开", latest_k.get("开盘", 0)),
-                "prev_close": real_time_data.get("昨收", 0),
-                "limit_up": real_time_data.get("涨停", 0),
-                "limit_down": real_time_data.get("跌停", 0),
-                "bid_ask_spread": {
-                    "buy_1": real_time_data.get("buy_1", 0),
-                    "buy_1_vol": real_time_data.get("buy_1_vol", 0),
-                    "sell_1": real_time_data.get("sell_1", 0),
-                    "sell_1_vol": real_time_data.get("sell_1_vol", 0),
-                },
-                "market_mood": {
-                    "外盘": real_time_data.get("外盘", 0),
-                    "内盘": real_time_data.get("内盘", 0),
-                },
-                "recent_performance": {
-                    "振幅": latest_k.get("振幅", 0) if latest_k else 0,
-                    "涨跌幅": latest_k.get("涨跌幅", 0) if latest_k else 0,
-                },
-                "indicators": technical_raw.get("technical_indicators", {}),
-                "signals": technical_raw.get("trading_signals", []),
-                "trend": determine_trend(k_line_data[-10:] if len(k_line_data) >= 10 else k_line_data),
+                "current_price": basic_info.get("最新", 0),
+                "price_change": 0,  # 综合数据中没有价格变动，设为0
+                "price_change_pct": 0,  # 综合数据中没有价格变动百分比，设为0
+                "trend": "趋势待观察",
                 "updated_at": datetime.now().isoformat()
             }
-            
-            # 从基本面数据提取财务指标
-            financial_indicators = fundamental_raw.get("financial_indicators", [])
-            
-            # 提取主要财务数据
-            revenue_data = {}
-            profit_data = {}
-            roe_data = {}
-            eps_data = {}
-            cash_flow_data = {}
-            
-            for indicator in financial_indicators[:10]:  # 取前10个主要指标
-                indicator_name = indicator.get("指标", "")
-                if indicator_name == "营业总收入":
-                    for quarter in ["20250630", "20250331", "20241231", "20240930", "20240630"]:
-                        if quarter in indicator and indicator[quarter]:
-                            revenue_data[quarter] = indicator[quarter]
-                elif indicator_name == "归母净利润":
-                    for quarter in ["20250630", "20250331", "20241231", "20240930", "20240630"]:
-                        if quarter in indicator and indicator[quarter]:
-                            profit_data[quarter] = indicator[quarter]
-                elif indicator_name == "净资产收益率(ROE)":
-                    for quarter in ["20250630", "20250331", "20241231", "20240930"]:
-                        if quarter in indicator and indicator[quarter]:
-                            roe_data[quarter] = indicator[quarter]
-                elif indicator_name == "基本每股收益":
-                    for quarter in ["20250630", "20250331", "20241231", "20240930"]:
-                        if quarter in indicator and indicator[quarter]:
-                            eps_data[quarter] = indicator[quarter]
-                elif indicator_name == "经营现金流量净额":
-                    for quarter in ["20250630", "20250331", "20241231", "20240930"]:
-                        if quarter in indicator and indicator[quarter]:
-                            cash_flow_data[quarter] = indicator[quarter]
             
             financial_data = {
                 "source": "financial_data",
                 "stock_code": stock_code,
-                "revenue_data": revenue_data,
-                "profit_data": profit_data,
-                "roe_data": roe_data,
-                "eps_data": eps_data,
-                "cash_flow_data": cash_flow_data,
-                "financial_indicators": financial_indicators[:8],  # 取前8个主要指标
+                "revenue_data": {"2025-06-30": latest_financial.get("total_revenue", 0)},
+                "profit_data": {"2025-06-30": latest_financial.get("net_profit_parent", 0)},
+                "roe_data": {"2025-06-30": latest_financial.get("roe", 0)},
+                "cash_flow_data": {"2025-06-30": latest_financial.get("operating_cash_flow", 0)},
+                "debt_ratio_data": {"2025-06-30": latest_financial.get("debt_ratio", 0)},
+                "net_margin_data": {"2025-06-30": latest_financial.get("net_margin", 0)},
                 "updated_at": datetime.now().isoformat()
             }
-            
-            # 模拟市场情绪数据 (基于技术面数据)
-            outer_inner_ratio = 0.5  # 中性
-            if real_time_data.get("外盘", 0) and real_time_data.get("内盘", 0):
-                total_trade = real_time_data["外盘"] + real_time_data["内盘"]
-                if total_trade > 0:
-                    outer_inner_ratio = real_time_data["外盘"] / total_trade
-            
-            sentiment_score = min(max((outer_inner_ratio - 0.3) * 2, 0), 1)  # 0-1范围
             
             sentiment_data = {
                 "source": "market_sentiment",
                 "stock_code": stock_code,
-                "sentiment_score": sentiment_score,
-                "news_sentiment": "positive" if sentiment_score > 0.6 else ("negative" if sentiment_score < 0.4 else "neutral"),
-                "market_mood": "多头气氛" if outer_inner_ratio > 0.55 else ("空头气氛" if outer_inner_ratio < 0.45 else "盘整气氛"),
-                "volume_analysis": "放量" if real_time_data.get("量比", 0) > 1.5 else ("缩量" if real_time_data.get("量比", 0) < 0.8 else "正常"),
-                "analyst_ratings": {"buy": 3, "hold": 2, "sell": 1},  # 模拟数据
+                "sentiment_score": 0.5,
+                "news_sentiment": "neutral",
                 "updated_at": datetime.now().isoformat()
             }
             
@@ -619,7 +534,7 @@ async def ai_analyze_stock(stock_code: str, analysis_style: str = "professional"
         current_price = fundamental.get("current_price", 0)
         pe_ratio = fundamental.get("pe_ratio", 0)
         industry = fundamental.get("industry", "未知")
-        market_cap = fundamental.get("market_cap", 0) / 100000000  # 转换为亿元
+        market_cap = fundamental.get("market_cap", 0)  # 已经是亿元单位
         
         # 基于真实数据生成分析内容
         style_templates = {

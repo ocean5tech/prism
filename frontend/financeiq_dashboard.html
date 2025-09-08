@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinanceIQ - Smart Stock Analysis</title>
+    <title>FinanceIQ - Smart Stock Analysis v2.3</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -605,10 +605,30 @@
 
             <nav>
                 <div class="nav-section">
-                    <div class="nav-title">Navigation</div>
-                    <a href="#" class="nav-item active">
+                    <div class="nav-title">分析面板</div>
+                    <a href="/dashboard" class="nav-item active">
                         <i class="fas fa-tachometer-alt"></i>
-                        Dashboard
+                        主页
+                    </a>
+                    <a href="/financial" class="nav-item">
+                        <i class="fas fa-chart-bar"></i>
+                        财务报表
+                    </a>
+                    <a href="/analysis" class="nav-item">
+                        <i class="fas fa-brain"></i>
+                        综合分析
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-title">工具</div>
+                    <a href="#" class="nav-item">
+                        <i class="fas fa-calculator"></i>
+                        估值计算器
+                    </a>
+                    <a href="#" class="nav-item">
+                        <i class="fas fa-chart-pie"></i>
+                        投资组合
                     </a>
                 </div>
 
@@ -807,7 +827,7 @@
     </div>
 
     <script>
-        const API_BASE = 'http://35.77.54.203:3003';
+        // 只使用本地API，不需要外部API_BASE
         
         // 搜索股票函数
         function searchStock(code) {
@@ -851,17 +871,24 @@
             document.getElementById('dashboardContent').style.display = 'none';
 
             try {
-                // 并行获取数据
-                const [basicInfo, fundamentalAnalysis, technicalData] = await Promise.allSettled([
-                    fetch(`${API_BASE}/api/stock-info/${stockCode}`).then(r => r.json()),
-                    fetch(`${API_BASE}/stocks/${stockCode}/analysis/fundamental`).then(r => r.json()),
-                    fetch(`${API_BASE}/stocks/${stockCode}/analysis/technical`).then(r => r.json())
+                // 并行获取数据 - 只使用本地API获取完整处理后的数据
+                const [stockData, aiAnalysis] = await Promise.allSettled([
+                    fetch(`http://35.77.54.203:3007/api/stocks/${stockCode}/data`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3007/api/ai/analyze?stock_code=${stockCode}&analysis_style=professional`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    }).then(r => r.json())
                 ]);
 
-                // 渲染数据
-                renderStockData(basicInfo.status === 'fulfilled' ? basicInfo.value : null);
-                renderFinancialData(fundamentalAnalysis.status === 'fulfilled' ? fundamentalAnalysis.value : null);
-                renderTechnicalData(technicalData.status === 'fulfilled' ? technicalData.value : null);
+                // 渲染数据 - 使用本地API的完整数据
+                const stock = stockData.status === 'fulfilled' ? stockData.value : null;
+                const aiResult = aiAnalysis.status === 'fulfilled' ? aiAnalysis.value : null;
+                
+                // 使用本地API的完整数据
+                renderStockData(stock);
+                renderTechnicalData(stock);
+                renderFinancialData(stock);
+                renderAIAnalysis(aiResult);
 
                 // 隐藏加载状态，显示内容
                 document.getElementById('loadingState').classList.remove('show');
@@ -876,102 +903,115 @@
 
         // 渲染股票基础数据
         function renderStockData(data) {
-            if (!data || !data.stock_info) {
+            if (!data) {
                 return;
             }
 
-            const info = data.stock_info;
-            document.getElementById('stockName').textContent = info.股票简称 || 'N/A';
-            document.getElementById('stockPrice').textContent = '￥' + (info.最新 || '0');
-            document.getElementById('marketCap').textContent = '￥' + formatNumber(info.总市值 || 0);
+            // 使用正确的数据结构 - data来自comprehensive API 或 stocks API
+            const basicInfo = data.basic_info || data.fundamental || {};
+            const financialData = data.financial || {};
             
-            // 假设数据 - 实际应该从API获取
-            document.getElementById('peRatio').textContent = '15.2';
-            document.getElementById('beta').textContent = '1.20';
-            document.getElementById('dividend').textContent = '0.00%';
-            document.getElementById('targetPrice').textContent = '￥' + formatNumber((info.最新 || 0) * 1.1);
+            document.getElementById('stockName').textContent = basicInfo.stock_name || data.stock_code || 'N/A';
+            document.getElementById('stockPrice').textContent = '￥' + formatNumber(basicInfo.current_price || 0);
+            document.getElementById('marketCap').textContent = '￥' + formatNumber(basicInfo.market_cap || 0) + '亿';
+            
+            // 使用真实数据
+            document.getElementById('peRatio').textContent = formatNumber(basicInfo.pe_ratio || 0, 2);
+            document.getElementById('beta').textContent = '1.20'; // 这个数据API中没有，保持默认
+            document.getElementById('dividend').textContent = '0.00%'; // 这个数据API中没有，保持默认
+            document.getElementById('targetPrice').textContent = '￥' + formatNumber((basicInfo.current_price || 0) * 1.1);
+            
+            // 更新价格变动 - 使用technical数据
+            const technicalInfo = data.technical || {};
+            const priceChange = technicalInfo.price_change_pct || 0;
+            const priceChangeElement = document.getElementById('priceChange');
+            priceChangeElement.textContent = (priceChange >= 0 ? '+' : '') + formatPercent(priceChange);
+            priceChangeElement.className = priceChange >= 0 ? 'change-positive' : 'change-negative';
         }
 
         // 渲染财务数据
         function renderFinancialData(data) {
-            if (!data || !data.financial_indicators) {
+            if (!data) {
                 return;
             }
 
-            const indicators = data.financial_indicators;
-            const latestData = {};
+            // 使用本地API返回的数据结构
+            const financialData = data.financial || {};
+            const revenueData = financialData.revenue_data || {};
+            const profitData = financialData.profit_data || {};
+            const roeData = financialData.roe_data || {};
+            const cashFlowData = financialData.cash_flow_data || {};
+            const debtRatioData = financialData.debt_ratio_data || {};
+            const netMarginData = financialData.net_margin_data || {};
             
-            // 提取最新季度数据
-            indicators.forEach(indicator => {
-                const periods = Object.keys(indicator).filter(key => key.match(/^\d{8}$/)).sort().reverse();
-                if (periods.length > 0) {
-                    latestData[indicator.指标] = indicator[periods[0]];
-                }
-            });
-
-            // 更新财务指标
-            document.getElementById('revenue').textContent = '￥' + formatNumber(latestData['营业总收入']);
-            document.getElementById('profitMargin').textContent = formatPercent(latestData['销售净利率']);
-            document.getElementById('debtEquity').textContent = formatNumber(latestData['资产负债率'], 2);
-            document.getElementById('cashFlow').textContent = '￥' + formatNumber(latestData['经营现金流量净额']);
-
-            // 更新AI分析
-            const roe = latestData['净资产收益率(ROE)'] || 0;
-            const profitGrowth = latestData['归属母公司净利润增长率'] || 0;
+            // 获取最新的财务数据
+            const revenue = revenueData['2025-06-30'] || 0;
+            const profit = profitData['2025-06-30'] || 0;
+            const roe = roeData['2025-06-30'] || 0;
+            const cashFlow = cashFlowData['2025-06-30'] || 0;
+            const debtRatio = debtRatioData['2025-06-30'] || 0;
+            const netMargin = netMarginData['2025-06-30'] || 0;
             
-            let recommendation = 'HOLD';
-            let riskLevel = 'Moderate';
-            let analystRating = 'Hold';
+            // 计算利润率 - 优先使用API提供的净利率，否则计算
+            const profitMargin = netMargin || (revenue > 0 ? (profit / revenue * 100) : 0);
             
-            if (roe > 15 && profitGrowth > 10) {
-                recommendation = 'BUY';
-                analystRating = 'Strong Buy';
-                riskLevel = 'Low';
-            } else if (roe < 5 || profitGrowth < -10) {
-                recommendation = 'SELL';
-                analystRating = 'Sell';
-                riskLevel = 'High';
-            }
-
-            document.getElementById('recommendation').textContent = recommendation;
-            document.getElementById('riskLevel').textContent = riskLevel;
-            document.getElementById('analystRating').textContent = analystRating;
-            
-            // 更新推荐卡片颜色
-            const recCard = document.querySelector('.recommendation');
-            recCard.className = 'recommendation';
-            if (recommendation === 'BUY') {
-                recCard.style.background = 'var(--success-green)';
-            } else if (recommendation === 'SELL') {
-                recCard.style.background = 'var(--danger-red)';
-            } else {
-                recCard.style.background = 'var(--warning-orange)';
-            }
-
-            // 生成详细分析
-            const analysis = `该股票显示${roe > 10 ? '良好' : '一般'}的盈利能力，ROE为${formatPercent(roe)}。${profitGrowth > 0 ? '净利润保持增长' : '净利润出现下滑'}，增长率为${formatPercent(profitGrowth)}。基于当前财务指标，建议${recommendation === 'BUY' ? '买入' : recommendation === 'SELL' ? '卖出' : '持有'}。`;
-            document.getElementById('detailedAnalysis').textContent = analysis;
+            // 更新财务指标显示
+            document.getElementById('revenue').textContent = '￥' + formatNumber(revenue);
+            document.getElementById('profitMargin').textContent = formatPercent(profitMargin);
+            document.getElementById('debtEquity').textContent = formatPercent(debtRatio);
+            document.getElementById('cashFlow').textContent = '￥' + formatNumber(cashFlow);
         }
 
         // 渲染技术数据
         function renderTechnicalData(data) {
-            if (!data || !data.real_time_data) {
+            if (!data) {
                 return;
             }
 
-            const realtime = data.real_time_data;
-            const changePercent = realtime.涨幅 || 0;
-            
-            const priceChangeElement = document.getElementById('priceChange');
-            priceChangeElement.textContent = (changePercent > 0 ? '+' : '') + formatPercent(changePercent);
-            
-            if (changePercent > 0) {
-                priceChangeElement.className = 'change-positive';
-            } else if (changePercent < 0) {
-                priceChangeElement.className = 'change-negative';
+            // 使用正确的数据结构
+            const basicInfo = data.basic_info || data.fundamental || {};
+            const currentPrice = basicInfo.current_price || 0;
+            document.getElementById('aiTargetPrice').textContent = '￥' + formatNumber(currentPrice * 1.15);
+        }
+
+        // 渲染AI分析数据
+        function renderAIAnalysis(aiResult) {
+            if (!aiResult) {
+                // 如果AI分析失败，使用财务数据生成简单分析
+                generateSimpleAnalysis();
+                return;
             }
 
-            document.getElementById('aiTargetPrice').textContent = '￥' + formatNumber((realtime.最新 || 0) * 1.15);
+            // 使用真实的AI分析结果
+            document.getElementById('recommendation').textContent = aiResult.summary || 'HOLD';
+            document.getElementById('riskLevel').textContent = aiResult.risk_assessment || 'Moderate';
+            document.getElementById('analystRating').textContent = aiResult.confidence_score > 0.7 ? 'Strong Buy' : 'Hold';
+            document.getElementById('detailedAnalysis').textContent = aiResult.content || '正在分析中...';
+            
+            // 更新推荐卡片颜色
+            const recCard = document.querySelector('.recommendation');
+            const recommendation = aiResult.summary || 'HOLD';
+            recCard.className = 'recommendation';
+            
+            if (recommendation.includes('买入') || recommendation.includes('BUY')) {
+                recCard.style.background = 'var(--success-green)';
+            } else if (recommendation.includes('卖出') || recommendation.includes('SELL')) {
+                recCard.style.background = 'var(--danger-red)';
+            } else {
+                recCard.style.background = 'var(--warning-orange)';
+            }
+        }
+
+        // 生成简单分析（当AI分析不可用时）
+        function generateSimpleAnalysis() {
+            // 使用基础的逻辑分析
+            document.getElementById('recommendation').textContent = 'HOLD';
+            document.getElementById('riskLevel').textContent = 'Moderate';
+            document.getElementById('analystRating').textContent = 'Hold';
+            document.getElementById('detailedAnalysis').textContent = '基于当前财务数据的基础分析，建议持有观望。';
+            
+            const recCard = document.querySelector('.recommendation');
+            recCard.style.background = 'var(--warning-orange)';
         }
 
         // 页面加载完成时的初始化
