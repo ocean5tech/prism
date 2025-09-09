@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>财务报表 | FinanceIQ分析系统</title>
+    <title>财务报表 | FinanceIQ分析系统 v2.5 - 真实数据</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -323,9 +323,13 @@
 
         <!-- 主内容区域 -->
         <main class="main-content">
-            <div class="page-header">
+            <div class="page-header" style="position: relative;">
                 <h1 class="page-title">财务报表分析</h1>
                 <p class="page-subtitle">对比分析上季和当季的财务数据，深度了解企业经营状况</p>
+                
+                <div style="position: absolute; top: 1rem; right: 1rem; font-size: 0.75rem; color: var(--text-secondary);">
+                    版本 v2.4 | 2025-09-09 14:30 UTC
+                </div>
                 
                 <div class="stock-selector">
                     <div class="input-group">
@@ -358,53 +362,70 @@
                 return;
             }
 
+            // 保存股票代码到localStorage实现全局共享
+            localStorage.setItem('currentStockCode', stockCode);
+
             contentDiv.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> 正在加载财务数据...</div>';
 
             try {
-                // 获取财务摘要数据
-                const response = await fetch(`http://35.77.54.203:3003/api/financial-abstract/${stockCode}`);
+                // 获取财务历史数据
+                const response = await fetch(`http://35.77.54.203:3003/stocks/${stockCode}/historical/financial`);
                 if (!response.ok) throw new Error('数据获取失败');
                 
                 const data = await response.json();
-                const indicators = data.financial_indicators || [];
+                const quarterlyData = data.quarterly_data || {};
 
-                if (indicators.length === 0) {
+                if (Object.keys(quarterlyData).length === 0) {
                     contentDiv.innerHTML = '<div class="error-message">未找到该股票的财务数据</div>';
                     return;
                 }
 
                 // 渲染财务数据
-                renderFinancialData(indicators, stockCode);
+                renderFinancialData(quarterlyData, stockCode);
 
             } catch (error) {
                 contentDiv.innerHTML = `<div class="error-message">加载失败: ${error.message}</div>`;
             }
         }
 
-        function renderFinancialData(indicators, stockCode) {
+        function renderFinancialData(quarterlyData, stockCode) {
             const contentDiv = document.getElementById('financialContent');
             
-            // 提取关键财务指标
-            const keyMetrics = extractKeyMetrics(indicators);
+            // 获取最新的两个季度数据
+            const quarters = Object.keys(quarterlyData).sort().reverse();
+            const currentQuarter = quarters[0] || null;
+            const previousQuarter = quarters[1] || null;
+            
+            if (!currentQuarter) {
+                contentDiv.innerHTML = '<div class="error-message">财务数据格式错误</div>';
+                return;
+            }
+
+            const currentData = quarterlyData[currentQuarter];
+            const previousData = previousQuarter ? quarterlyData[previousQuarter] : null;
+            
+            // 关键财务指标列表
+            const keyMetrics = ['归母净利润', '营业总收入', '营业成本', '净利润', '扣非净利润', '毛利率', '销售净利率', '净资产收益率(ROE)', '总资产报酬率(ROA)'];
             
             contentDiv.innerHTML = `
                 <div class="quarter-section">
                     <h2 class="quarter-title">
                         <i class="fas fa-calendar-alt"></i>
-                        当季财务数据 (Q2 2025)
+                        当季财务数据 (${currentQuarter})
                     </h2>
                     <div class="metrics-grid">
-                        ${renderMetrics(keyMetrics, '20250630')}
+                        ${renderQuarterMetrics(currentData.metrics, keyMetrics)}
                     </div>
                 </div>
 
+                ${previousData ? `
                 <div class="quarter-section">
                     <h2 class="quarter-title">
                         <i class="fas fa-history"></i>
-                        上季财务数据 (Q1 2025)
+                        上季财务数据 (${previousQuarter})
                     </h2>
                     <div class="metrics-grid">
-                        ${renderMetrics(keyMetrics, '20250331')}
+                        ${renderQuarterMetrics(previousData.metrics, keyMetrics)}
                     </div>
                 </div>
 
@@ -413,46 +434,49 @@
                         <i class="fas fa-balance-scale"></i>
                         季度对比分析
                     </h2>
-                    ${renderComparison(keyMetrics)}
+                    ${renderQuarterComparison(currentData.metrics, previousData.metrics, keyMetrics)}
                 </div>
+                ` : '<div class="error-message">缺少上一季度数据进行对比</div>'}
             `;
         }
 
-        function extractKeyMetrics(indicators) {
-            const keyNames = ['归母净利润', '营业总收入', '营业成本', '净利润', '扣非净利润', '毛利率', '销售净利率', '净资产收益率(ROE)', '总资产报酬率(ROA)'];
-            return indicators.filter(item => keyNames.includes(item.指标));
-        }
-
-        function renderMetrics(metrics, period) {
-            return metrics.map(metric => {
-                const value = metric[period];
-                const formattedValue = formatFinancialValue(value, metric.指标);
+        function renderQuarterMetrics(metrics, keyMetrics) {
+            return keyMetrics.map(metricName => {
+                const value = metrics[metricName];
+                if (value === undefined || value === null) return '';
+                
+                const formattedValue = formatFinancialValue(value, metricName);
                 return `
                     <div class="metric-item">
-                        <span class="metric-label">${metric.指标}</span>
-                        <span class="metric-value ${getValueClass(value, metric.指标)}">${formattedValue}</span>
+                        <span class="metric-label">${metricName}</span>
+                        <span class="metric-value ${getValueClass(value, metricName)}">${formattedValue}</span>
                     </div>
                 `;
-            }).join('');
+            }).filter(item => item !== '').join('');
         }
 
-        function renderComparison(metrics) {
-            return metrics.map(metric => {
-                const current = metric['20250630'] || 0;
-                const previous = metric['20250331'] || 0;
+        function renderQuarterComparison(currentMetrics, previousMetrics, keyMetrics) {
+            return keyMetrics.map(metricName => {
+                const current = currentMetrics[metricName] || 0;
+                const previous = previousMetrics[metricName] || 0;
+                
+                if (current === undefined || current === null || previous === undefined || previous === null) {
+                    return '';
+                }
+                
                 const change = current - previous;
                 const changePercent = previous !== 0 ? ((change / previous) * 100) : 0;
                 
                 return `
                     <div class="metric-item">
-                        <span class="metric-label">${metric.指标}</span>
+                        <span class="metric-label">${metricName}</span>
                         <span class="metric-value ${change >= 0 ? 'positive' : 'negative'}">
-                            ${change >= 0 ? '+' : ''}${formatFinancialValue(change, metric.指标)}
+                            ${change >= 0 ? '+' : ''}${formatFinancialValue(change, metricName)}
                             (${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%)
                         </span>
                     </div>
                 `;
-            }).join('');
+            }).filter(item => item !== '').join('');
         }
 
         function formatFinancialValue(value, metricName) {
@@ -485,9 +509,28 @@
             return num > 0 ? 'positive' : 'negative';
         }
 
+        // 全局股票代码共享功能
+        function loadGlobalStockCode() {
+            const savedStockCode = localStorage.getItem('currentStockCode');
+            if (savedStockCode) {
+                document.getElementById('stockInput').value = savedStockCode;
+                loadFinancialData(); // 自动加载数据
+            } else {
+                document.getElementById('stockInput').value = '002222';
+            }
+        }
+
+        // 监听其他页面的股票代码变化
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'currentStockCode' && e.newValue) {
+                document.getElementById('stockInput').value = e.newValue;
+                loadFinancialData();
+            }
+        });
+
         // 页面加载时设置默认股票代码
         window.addEventListener('load', () => {
-            document.getElementById('stockInput').value = '002222';
+            loadGlobalStockCode();
         });
     </script>
 </body>

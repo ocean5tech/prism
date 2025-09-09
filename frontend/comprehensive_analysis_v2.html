@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>综合分析 | FinanceIQ分析系统 v3.0 - 完整数据可视化</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-blue: #4A90E2;
+            --success-green: #2ECC71;
+            --danger-red: #E74C3C;
+            --warning-orange: #F39C12;
+            --light-gray: #F8F9FA;
+            --medium-gray: #6C757D;
+            --dark-gray: #495057;
+            --border-light: #DEE2E6;
+            --white: #FFFFFF;
+            --text-primary: #212529;
+            --text-secondary: #6C757D;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--light-gray);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 左侧导航栏 */
+        .sidebar {
+            width: 280px;
+            background: var(--white);
+            border-right: 1px solid var(--border-light);
+            padding: 2rem;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary-blue);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .logo-subtitle {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: -0.25rem;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 1rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.25rem;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            background-color: var(--light-gray);
+            color: var(--text-primary);
+        }
+
+        .nav-item.active {
+            background-color: var(--primary-blue);
+            color: var(--white);
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        .header {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .header-title {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .header-subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 1rem;
+            max-width: 500px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            border: 2px solid var(--border-light);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            background: var(--white);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.1);
+        }
+
+        .search-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .search-btn:hover {
+            background: #3a7bc8;
+            transform: translateY(-2px);
+        }
+
+        /* 加载状态 */
+        .loading-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border-light);
+            border-top: 4px solid var(--primary-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 数据卡片样式 */
+        .data-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+        }
+
+        .data-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 1rem;
+            background: var(--light-gray);
+            border-radius: 12px;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* 进度条样式 */
+        .progress-bar {
+            background: var(--border-light);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+        }
+
+        /* 标签样式 */
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tag-success { background: rgba(46, 204, 113, 0.1); color: var(--success-green); }
+        .tag-warning { background: rgba(243, 156, 18, 0.1); color: var(--warning-orange); }
+        .tag-info { background: rgba(74, 144, 226, 0.1); color: var(--primary-blue); }
+        .tag-danger { background: rgba(231, 76, 60, 0.1); color: var(--danger-red); }
+
+        /* 表格样式 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .data-table th {
+            background: var(--light-gray);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .data-table tbody tr:hover {
+            background: rgba(74, 144, 226, 0.02);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        /* 新增样式 */
+        .overview-card {
+            background: var(--gradient-1);
+            color: white;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+
+        .full-table-hidden {
+            display: none;
+        }
+
+        .expand-btn {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .expand-btn:hover {
+            background: #3a7bc8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- 左侧导航栏 -->
+        <nav class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div>
+                    <div class="logo-text">FinanceIQ</div>
+                    <div class="logo-subtitle">智能分析系统</div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">分析模块</div>
+                <a href="/dashboard" class="nav-item">
+                    <i class="fas fa-home"></i>
+                    主页概览
+                </a>
+                <a href="/financial" class="nav-item">
+                    <i class="fas fa-chart-bar"></i>
+                    财务报表
+                </a>
+                <a href="/analysis" class="nav-item active">
+                    <i class="fas fa-brain"></i>
+                    综合分析
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">工具</div>
+                <a href="#" class="nav-item" onclick="exportAnalysisData()">
+                    <i class="fas fa-download"></i>
+                    导出数据
+                </a>
+                <a href="#" class="nav-item" onclick="shareAnalysis()">
+                    <i class="fas fa-share"></i>
+                    分享分析
+                </a>
+            </div>
+        </nav>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 页面头部 -->
+            <header class="header">
+                <div style="position: absolute; top: 1rem; right: 1rem; font-size: 0.75rem; color: var(--text-secondary);">
+                    版本 v3.0 | 2025-09-09 18:00 UTC | 完整数据可视化版
+                </div>
+                
+                <h1 class="header-title">AI综合分析</h1>
+                <p class="header-subtitle">基于3003端口完整数据的多维度智能分析系统</p>
+                
+                <div class="search-container">
+                    <input type="text" class="search-input" id="stockInput" placeholder="输入股票代码 (例: 002222)" maxlength="6">
+                    <button class="search-btn" onclick="loadComprehensiveAnalysis()">
+                        <i class="fas fa-search"></i>
+                        开始分析
+                    </button>
+                </div>
+            </header>
+
+            <!-- 加载状态 -->
+            <div id="loadingState" class="loading-state" style="display: none;">
+                <div class="loading-spinner"></div>
+                <h3 style="color: var(--text-primary); margin-bottom: 1rem;">正在进行AI智能分析...</h3>
+                <p style="color: var(--text-secondary);">获取实时数据 → 技术指标计算 → AI模型推理 → 生成分析报告</p>
+                <div style="margin-top: 2rem; max-width: 400px; margin-left: auto; margin-right: auto;">
+                    <div style="background: var(--border-light); height: 4px; border-radius: 2px; overflow: hidden;">
+                        <div id="progressBar" style="background: var(--primary-blue); height: 100%; width: 0%; transition: width 2s ease;"></div>
+                    </div>
+                    <p id="progressText" style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">准备中...</p>
+                </div>
+            </div>
+
+            <!-- 路线图说明 -->
+            <div id="roadmapSection" class="data-card" style="text-align: center;">
+                <div style="margin-bottom: 2rem;">
+                    <i class="fas fa-rocket" style="font-size: 3rem; color: var(--primary-blue); margin-bottom: 1rem;"></i>
+                    <h2 style="color: var(--text-primary); margin-bottom: 1rem;">🚀 全新AI综合分析系统</h2>
+                    <p style="color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0 auto;">
+                        基于3003端口完整数据源，展示80+财务指标的全方位可视化分析
+                    </p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+                    <div>
+                        <div style="background: var(--gradient-1); color: white; padding: 1.5rem; border-radius: 12px;">
+                            <i class="fas fa-brain" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <h4>AI智能分析</h4>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">综合评估+证据推理+风险评估</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="background: var(--gradient-2); color: white; padding: 1.5rem; border-radius: 12px;">
+                            <i class="fas fa-chart-area" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <h4>数据可视化</h4>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">图表+表格+卡片多维展示</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="background: var(--gradient-3); color: white; padding: 1.5rem; border-radius: 12px;">
+                            <i class="fas fa-database" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <h4>完整数据源</h4>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">80+财务指标历史趋势分析</p>
+                        </div>
+                    </div>
+                    <div>
+                        <div style="background: var(--gradient-4); color: white; padding: 1.5rem; border-radius: 12px;">
+                            <i class="fas fa-bullseye" style="font-size: 2rem; margin-bottom: 1rem;"></i>
+                            <h4>投资建议</h4>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem; opacity: 0.9;">目标价格+时间框架+风险评估</p>
+                        </div>
+                    </div>
+                </div>
+
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">
+                    输入股票代码开始体验全新的AI综合分析功能
+                </p>
+            </div>
+
+            <!-- 分析结果展示区域 -->
+            <div id="analysisResults" style="display: none;"></div>
+        </main>
+    </div>
+
+    <script>
+        // 格式化数字函数
+        function formatNumber(num, decimals = 2) {
+            if (num === null || num === undefined || isNaN(num)) return '0.00';
+            return Number(num).toLocaleString('zh-CN', {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
+        }
+
+        // 格式化百分比函数
+        function formatPercent(num, decimals = 2) {
+            if (num === null || num === undefined || isNaN(num)) return '0.00%';
+            return Number(num).toFixed(decimals) + '%';
+        }
+
+        // 主分析函数
+        async function loadComprehensiveAnalysis() {
+            const stockCode = document.getElementById('stockInput').value.trim();
+            
+            if (!stockCode || stockCode.length !== 6) {
+                alert('请输入有效的6位股票代码');
+                return;
+            }
+            
+            // 保存股票代码到本地存储
+            localStorage.setItem('currentStockCode', stockCode);
+            
+            // 显示加载状态
+            document.getElementById('roadmapSection').style.display = 'none';
+            document.getElementById('analysisResults').style.display = 'none';
+            document.getElementById('loadingState').style.display = 'block';
+            
+            // 更新进度条
+            updateProgress(20, '正在获取股票基础数据...');
+            
+            try {
+                // 获取3003端口的AI综合评估数据
+                updateProgress(60, '正在进行AI智能分析...');
+                const aiAnalysis = await fetch(`http://35.77.54.203:3003/ai/comprehensive-evaluation/${stockCode}`);
+                const aiResult = await aiAnalysis.json();
+                
+                updateProgress(80, '正在生成可视化报告...');
+                
+                // 获取其他数据源（保留原有逻辑作为补充）
+                const [stock, technical, financial, fundFlow] = await Promise.allSettled([
+                    fetch(`http://35.77.54.203:3003/stocks/${stockCode}`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3003/stocks/${stockCode}/analysis/technical`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3003/stocks/${stockCode}/historical/financial`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3003/api/fund-flow/${stockCode}`).then(r => r.json())
+                ]);
+                
+                updateProgress(100, '分析完成！');
+                
+                // 渲染完整的AI分析结果
+                renderComprehensiveAnalysis(aiResult, {
+                    stock: stock.status === 'fulfilled' ? stock.value : null,
+                    technical: technical.status === 'fulfilled' ? technical.value : null,
+                    financial: financial.status === 'fulfilled' ? financial.value : null,
+                    fundFlow: fundFlow.status === 'fulfilled' ? fundFlow.value : null
+                });
+                
+                // 隐藏加载状态，显示结果
+                setTimeout(() => {
+                    document.getElementById('loadingState').style.display = 'none';
+                    document.getElementById('analysisResults').style.display = 'block';
+                }, 500);
+                
+            } catch (error) {
+                console.error('获取数据失败:', error);
+                alert('获取数据失败，请检查股票代码是否正确或网络连接');
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('roadmapSection').style.display = 'block';
+            }
+        }
+
+        // 更新进度条
+        function updateProgress(percent, text) {
+            document.getElementById('progressBar').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text;
+        }
+
+        // 渲染完整的AI综合分析数据
+        function renderComprehensiveAnalysis(aiResult, supplementData) {
+            const resultsDiv = document.getElementById('analysisResults');
+            
+            // 处理AI分析数据
+            const comprehensiveEvaluation = aiResult?.comprehensive_evaluation || {};
+            const evidenceAndReasoning = aiResult?.evidence_and_reasoning || {};
+            const detailedAnalysis = aiResult?.detailed_analysis || {};
+            const sectorComparison = aiResult?.sector_comparison || {};
+            const rawDataSources = aiResult?.raw_data_sources || {};
+            const fundamentalData = rawDataSources?.fundamental_data || {};
+            const basicInfo = fundamentalData?.basic_info || {};
+            
+            // 处理财务指标数据
+            const financialIndicators = fundamentalData?.financial_indicators || [];
+            const latestMetrics = {};
+            
+            financialIndicators.forEach(indicator => {
+                const quarters = Object.keys(indicator).filter(key => key.startsWith('20') && key.length === 8).sort().reverse();
+                if (quarters.length > 0) {
+                    latestMetrics[indicator['指标']] = indicator[quarters[0]];
+                }
+            });
+            
+            resultsDiv.innerHTML = `
+                <!-- 头部总览卡片 -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                    <div class="overview-card">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                            <i class="fas fa-chart-line" style="font-size: 2rem;"></i>
+                            <div>
+                                <h2 style="margin: 0; font-size: 1.5rem;">${basicInfo['股票简称'] || '未知股票'}</h2>
+                                <p style="margin: 0; opacity: 0.8; font-size: 0.9rem;">${document.getElementById('stockInput').value} | ${basicInfo['行业'] || '未知行业'}</p>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: end;">
+                            <div>
+                                <p style="margin: 0; font-size: 2.5rem; font-weight: 700;">￥${basicInfo['最新'] || 0}</p>
+                                <p style="margin: 0; opacity: 0.8;">当前股价</p>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="background: rgba(255,255,255,0.2); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.9rem;">
+                                    ${comprehensiveEvaluation?.investment_rating || 'HOLD'}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="data-card">
+                        <h3 class="card-title">
+                            <i class="fas fa-bullseye" style="color: var(--success-green);"></i>
+                            投资目标
+                        </h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <p style="margin: 0 0 0.5rem 0; color: var(--text-secondary); font-size: 0.85rem;">目标价格</p>
+                                <p style="margin: 0; font-size: 1.8rem; font-weight: 700; color: var(--success-green);">￥${comprehensiveEvaluation?.target_price || '--'}</p>
+                            </div>
+                            <div>
+                                <p style="margin: 0 0 0.5rem 0; color: var(--text-secondary); font-size: 0.85rem;">上涨潜力</p>
+                                <p style="margin: 0; font-size: 1.8rem; font-weight: 700; color: var(--primary-blue);">${comprehensiveEvaluation?.upside_potential || '--'}</p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-light);">
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.85rem;">投资期限: ${comprehensiveEvaluation?.time_horizon || '6-12个月'} | 信心水平: ${comprehensiveEvaluation?.confidence_level || '中'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="data-card">
+                        <h3 class="card-title">
+                            <i class="fas fa-chart-bar" style="color: var(--warning-orange);"></i>
+                            关键指标
+                        </h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.9rem;">
+                            <div>
+                                <p style="margin: 0 0 0.25rem 0; color: var(--text-secondary);">总市值</p>
+                                <p style="margin: 0 0 1rem 0; font-weight: 600;">￥${formatNumber((basicInfo['总市值'] || 0) / 100000000)}亿</p>
+                            </div>
+                            <div>
+                                <p style="margin: 0 0 0.25rem 0; color: var(--text-secondary);">流通市值</p>
+                                <p style="margin: 0 0 1rem 0; font-weight: 600;">￥${formatNumber((basicInfo['流通市值'] || 0) / 100000000)}亿</p>
+                            </div>
+                            <div>
+                                <p style="margin: 0 0 0.25rem 0; color: var(--text-secondary);">ROE</p>
+                                <p style="margin: 0; font-weight: 600; color: var(--success-green);">${formatPercent(latestMetrics['净资产收益率(ROE)'] || 0)}</p>
+                            </div>
+                            <div>
+                                <p style="margin: 0 0 0.25rem 0; color: var(--text-secondary);">毛利率</p>
+                                <p style="margin: 0; font-weight: 600; color: var(--success-green);">${formatPercent(latestMetrics['毛利率'] || 0)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- AI分析结果展示 -->
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                    <div class="data-card">
+                        <h3 class="card-title">
+                            <i class="fas fa-brain" style="color: var(--primary-blue);"></i>
+                            AI综合分析报告
+                        </h3>
+                        <div style="line-height: 1.8; color: var(--text-primary);">
+                            ${aiResult?.content || '基于多维度数据分析，该股票基本面表现稳健...'}
+                        </div>
+                        
+                        <div style="margin-top: 2rem; padding: 1.5rem; background: var(--light-gray); border-radius: 12px;">
+                            <h4 style="margin: 0 0 1rem 0; color: var(--text-primary);">🎯 投资建议</h4>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                ${(aiResult?.recommendations || ['持续关注市场动态', '控制投资仓位比例', '设置合理止盈止损点']).map(rec => 
+                                    `<span class="tag tag-success">${rec}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <div class="data-card">
+                            <h4 style="margin: 0 0 1rem 0; color: var(--text-primary);">📊 评估维度</h4>
+                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <span style="font-size: 0.85rem; color: var(--text-secondary);">基本面强度</span>
+                                        <span style="font-size: 0.85rem; font-weight: 600;">${detailedAnalysis?.fundamental_strength || '强'}</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="background: var(--success-green); width: 85%;"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <span style="font-size: 0.85rem; color: var(--text-secondary);">技术面前景</span>
+                                        <span style="font-size: 0.85rem; font-weight: 600;">${detailedAnalysis?.technical_outlook || '偏强'}</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="background: var(--primary-blue); width: 75%;"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <span style="font-size: 0.85rem; color: var(--text-secondary);">估值吸引力</span>
+                                        <span style="font-size: 0.85rem; font-weight: 600;">${detailedAnalysis?.valuation_assessment || '合理偏低'}</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="background: var(--warning-orange); width: 70%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="data-card">
+                            <h4 style="margin: 0 0 1rem 0; color: var(--text-primary);">🏭 行业地位</h4>
+                            <p style="margin: 0 0 1rem 0; font-size: 0.9rem; color: var(--text-primary);">
+                                <strong>${sectorComparison?.industry_position || '行业领先地位'}</strong>
+                            </p>
+                            <p style="margin: 0 0 1rem 0; font-size: 0.85rem; color: var(--text-secondary);">
+                                相对估值: ${sectorComparison?.relative_valuation || '低于行业平均'}
+                            </p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.25rem;">
+                                ${(sectorComparison?.competitive_advantages || ['品牌价值领先', '技术优势明显', '财务状况稳健']).map(advantage => 
+                                    `<span class="tag tag-info">${advantage}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 关键支撑数据和风险因素 -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                    <div class="data-card">
+                        <h3 class="card-title">
+                            <i class="fas fa-check-circle" style="color: var(--success-green);"></i>
+                            关键支撑数据
+                        </h3>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            ${(evidenceAndReasoning?.key_supporting_data || ['数据加载中...']).map(data => 
+                                `<div style="display: flex; align-items: start; gap: 0.75rem;">
+                                    <div style="background: var(--success-green); width: 6px; height: 6px; border-radius: 50%; margin-top: 0.5rem; flex-shrink: 0;"></div>
+                                    <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; color: var(--text-primary);">${data}</p>
+                                </div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="data-card">
+                        <h3 class="card-title">
+                            <i class="fas fa-exclamation-triangle" style="color: var(--warning-orange);"></i>
+                            风险因素
+                        </h3>
+                        <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            ${(detailedAnalysis?.risk_factors || ['市场波动风险', '行业竞争风险', '宏观经济影响']).map(risk => 
+                                `<div style="display: flex; align-items: start; gap: 0.75rem;">
+                                    <div style="background: var(--warning-orange); width: 6px; height: 6px; border-radius: 50%; margin-top: 0.5rem; flex-shrink: 0;"></div>
+                                    <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; color: var(--text-primary);">${risk}</p>
+                                </div>`
+                            ).join('')}
+                        </div>
+                        
+                        <div style="margin-top: 2rem; padding: 1rem; background: rgba(243, 156, 18, 0.1); border-radius: 8px; border-left: 4px solid var(--warning-orange);">
+                            <h4 style="margin: 0 0 0.5rem 0; color: var(--warning-orange); font-size: 0.9rem;">不确定性因素</h4>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                                ${(evidenceAndReasoning?.uncertainty_factors || ['市场波动', '政策变化']).slice(0, 3).map(factor => 
+                                    `<span class="tag tag-warning">${factor}</span>`
+                                ).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 财务指标图表展示区域 -->
+                <div class="data-card" style="margin-bottom: 2rem;">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-area" style="color: var(--primary-blue);"></i>
+                        核心财务指标趋势
+                    </h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                        <div>
+                            <canvas id="revenueChart" class="chart-container"></canvas>
+                        </div>
+                        <div>
+                            <canvas id="profitChart" class="chart-container"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 详细财务数据表格 -->
+                <div class="data-card">
+                    <h3 class="card-title">
+                        <i class="fas fa-table" style="color: var(--success-green);"></i>
+                        完整财务指标 (最新季度)
+                    </h3>
+                    <div style="overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>指标名称</th>
+                                    <th style="text-align: right;">数值</th>
+                                    <th style="text-align: center;">单位</th>
+                                    <th style="text-align: center;">分类</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(latestMetrics).slice(0, 20).map(([metric, value]) => {
+                                    const isPercentage = metric.includes('率') || metric.includes('ROE') || metric.includes('ROA');
+                                    const isAmount = metric.includes('收入') || metric.includes('利润') || metric.includes('资产') || metric.includes('现金流');
+                                    let displayValue = value;
+                                    let unit = '';
+                                    let category = '基础指标';
+                                    
+                                    if (isPercentage) {
+                                        displayValue = formatPercent(value);
+                                        unit = '%';
+                                        category = '比率指标';
+                                    } else if (isAmount && Math.abs(value) > 100000000) {
+                                        displayValue = formatNumber(value / 100000000, 2);
+                                        unit = '亿元';
+                                        category = '金额指标';
+                                    } else if (Math.abs(value) > 10000) {
+                                        displayValue = formatNumber(value / 10000, 2);
+                                        unit = '万';
+                                        category = '数量指标';
+                                    } else {
+                                        displayValue = formatNumber(value, 2);
+                                        unit = '单位';
+                                    }
+                                    
+                                    return `
+                                        <tr>
+                                            <td style="font-weight: 500;">${metric}</td>
+                                            <td style="text-align: right; font-weight: 600;">${displayValue}</td>
+                                            <td style="text-align: center; color: var(--text-secondary);">${unit}</td>
+                                            <td style="text-align: center;">
+                                                <span class="tag tag-info">${category}</span>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top: 1rem; text-align: center;">
+                        <button class="expand-btn" onclick="toggleFullFinancialTable()">
+                            查看全部${Object.keys(latestMetrics).length}个财务指标
+                        </button>
+                    </div>
+                    
+                    <!-- 隐藏的完整表格 -->
+                    <div id="fullFinancialTable" class="full-table-hidden" style="margin-top: 2rem; overflow-x: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>指标名称</th>
+                                    <th style="text-align: right;">数值</th>
+                                    <th style="text-align: center;">单位</th>
+                                    <th style="text-align: center;">分类</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${Object.entries(latestMetrics).map(([metric, value]) => {
+                                    const isPercentage = metric.includes('率') || metric.includes('ROE') || metric.includes('ROA');
+                                    const isAmount = metric.includes('收入') || metric.includes('利润') || metric.includes('资产') || metric.includes('现金流');
+                                    let displayValue = value;
+                                    let unit = '';
+                                    let category = '基础指标';
+                                    
+                                    if (isPercentage) {
+                                        displayValue = formatPercent(value);
+                                        unit = '%';
+                                        category = '比率指标';
+                                    } else if (isAmount && Math.abs(value) > 100000000) {
+                                        displayValue = formatNumber(value / 100000000, 2);
+                                        unit = '亿元';
+                                        category = '金额指标';
+                                    } else if (Math.abs(value) > 10000) {
+                                        displayValue = formatNumber(value / 10000, 2);
+                                        unit = '万';
+                                        category = '数量指标';
+                                    } else {
+                                        displayValue = formatNumber(value, 2);
+                                        unit = '单位';
+                                    }
+                                    
+                                    return `
+                                        <tr>
+                                            <td style="font-weight: 500;">${metric}</td>
+                                            <td style="text-align: right; font-weight: 600;">${displayValue}</td>
+                                            <td style="text-align: center; color: var(--text-secondary);">${unit}</td>
+                                            <td style="text-align: center;">
+                                                <span class="tag tag-info">${category}</span>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            // 渲染图表
+            setTimeout(() => {
+                renderFinancialCharts(financialIndicators);
+            }, 100);
+        }
+
+        // 渲染财务指标图表
+        function renderFinancialCharts(financialIndicators) {
+            if (!financialIndicators || financialIndicators.length === 0) return;
+            
+            // 找到营业总收入和净利润数据
+            const revenueData = financialIndicators.find(item => item['指标'] === '营业总收入');
+            const profitData = financialIndicators.find(item => item['指标'] === '归母净利润');
+            
+            if (revenueData) {
+                renderRevenueChart(revenueData);
+            }
+            
+            if (profitData) {
+                renderProfitChart(profitData);
+            }
+        }
+
+        // 渲染营业收入图表
+        function renderRevenueChart(revenueData) {
+            const ctx = document.getElementById('revenueChart');
+            if (!ctx) return;
+            
+            // 提取最近8个季度的数据
+            const quarters = Object.keys(revenueData).filter(key => key.startsWith('20') && key.length === 8).sort().slice(-8);
+            const values = quarters.map(q => (revenueData[q] || 0) / 100000000); // 转换为亿元
+            const labels = quarters.map(q => `${q.substring(0,4)}Q${Math.ceil(parseInt(q.substring(4,6))/3)}`);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '营业总收入 (亿元)',
+                        data: values,
+                        borderColor: '#4A90E2',
+                        backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '亿元'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '营业总收入趋势'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 渲染净利润图表
+        function renderProfitChart(profitData) {
+            const ctx = document.getElementById('profitChart');
+            if (!ctx) return;
+            
+            // 提取最近8个季度的数据
+            const quarters = Object.keys(profitData).filter(key => key.startsWith('20') && key.length === 8).sort().slice(-8);
+            const values = quarters.map(q => (profitData[q] || 0) / 100000000); // 转换为亿元
+            const labels = quarters.map(q => `${q.substring(0,4)}Q${Math.ceil(parseInt(q.substring(4,6))/3)}`);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '归母净利润 (亿元)',
+                        data: values,
+                        backgroundColor: 'rgba(46, 204, 113, 0.8)',
+                        borderColor: '#2ECC71',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '亿元'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '归母净利润趋势'
+                        }
+                    }
+                }
+            });
+        }
+
+        // 切换完整财务表格显示
+        function toggleFullFinancialTable() {
+            const fullTable = document.getElementById('fullFinancialTable');
+            const button = event.target;
+            
+            if (fullTable.classList.contains('full-table-hidden')) {
+                fullTable.classList.remove('full-table-hidden');
+                fullTable.style.display = 'block';
+                button.textContent = '收起完整表格';
+            } else {
+                fullTable.classList.add('full-table-hidden');
+                fullTable.style.display = 'none';
+                button.textContent = `查看全部财务指标`;
+            }
+        }
+
+        // 导出分析数据
+        function exportAnalysisData() {
+            alert('导出功能开发中...');
+        }
+
+        // 分享分析
+        function shareAnalysis() {
+            const stockCode = document.getElementById('stockInput').value;
+            if (stockCode) {
+                const url = `${window.location.origin}/analysis?stock=${stockCode}`;
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('分析链接已复制到剪贴板！');
+                });
+            }
+        }
+
+        // 全局股票代码共享功能
+        function loadGlobalStockCode() {
+            const savedStockCode = localStorage.getItem('currentStockCode');
+            if (savedStockCode) {
+                document.getElementById('stockInput').value = savedStockCode;
+            }
+        }
+
+        // 监听其他页面的股票代码变化
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'currentStockCode' && e.newValue) {
+                document.getElementById('stockInput').value = e.newValue;
+            }
+        });
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 回车键触发分析
+            document.getElementById('stockInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    loadComprehensiveAnalysis();
+                }
+            });
+            
+            // 加载全局股票代码
+            loadGlobalStockCode();
+            
+            // 检查URL参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const stockParam = urlParams.get('stock');
+            if (stockParam) {
+                document.getElementById('stockInput').value = stockParam;
+                loadComprehensiveAnalysis();
+            }
+        });
+    </script>
+</body>
+</html>

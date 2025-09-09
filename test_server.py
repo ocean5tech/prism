@@ -70,9 +70,9 @@ async def financial_reports():
 
 @app.get("/analysis")
 async def comprehensive_analysis():
-    """综合分析页面 - 开发中"""
+    """综合分析页面 - 完整数据可视化版本"""
     from fastapi.responses import FileResponse
-    response = FileResponse('frontend/comprehensive_analysis.html')
+    response = FileResponse('frontend/comprehensive_analysis_v2.html')
     response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"

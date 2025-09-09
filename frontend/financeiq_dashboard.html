@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FinanceIQ - Smart Stock Analysis v2.3</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>FinanceIQ - Smart Stock Analysis v3.0</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -562,6 +565,25 @@
             display: block;
         }
 
+        /* JSON格式化显示样式 */
+        .json-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+        
+        .json-block pre {
+            margin: 0;
+            padding: 1rem;
+            color: #495057;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
+        }
+
         /* 响应式设计 */
         @media (max-width: 1200px) {
             .dashboard-grid {
@@ -652,10 +674,13 @@
             <header class="header">
                 <h1 class="header-title">Financial Dashboard</h1>
                 <p class="header-subtitle">Enter a stock symbol to get comprehensive financial analysis with AI insights</p>
+                <div style="position: absolute; top: 1rem; right: 1rem; font-size: 0.75rem; color: var(--text-secondary);">
+                    版本 v3.1 | 2025-09-09 17:23 UTC | JavaScript语法错误修复版
+                </div>
                 
                 <div class="search-container">
                     <input type="text" class="search-input" id="stockInput" placeholder="输入股票代码 (例: 002222)" maxlength="6">
-                    <button class="search-btn" onclick="analyzeStock()">
+                    <button class="search-btn" onclick="if(typeof analyzeStock === 'function'){analyzeStock()}else{alert('analyzeStock函数未定义，请刷新页面');}">
                         <i class="fas fa-search"></i>
                         Analyze
                     </button>
@@ -663,11 +688,11 @@
 
                 <div class="popular-stocks">
                     <span class="popular-stocks-label">Popular stocks:</span>
-                    <span class="stock-tag" onclick="searchStock('000001')">000001</span>
-                    <span class="stock-tag" onclick="searchStock('000002')">000002</span>
-                    <span class="stock-tag" onclick="searchStock('002222')">002222</span>
-                    <span class="stock-tag" onclick="searchStock('000858')">000858</span>
-                    <span class="stock-tag" onclick="searchStock('600036')">600036</span>
+                    <span class="stock-tag" onclick="if(typeof searchStock === 'function'){searchStock('000001')}else{alert('searchStock函数未定义，请刷新页面');}">000001</span>
+                    <span class="stock-tag" onclick="if(typeof searchStock === 'function'){searchStock('000002')}else{alert('searchStock函数未定义，请刷新页面');}">000002</span>
+                    <span class="stock-tag" onclick="if(typeof searchStock === 'function'){searchStock('002222')}else{alert('searchStock函数未定义，请刷新页面');}">002222</span>
+                    <span class="stock-tag" onclick="if(typeof searchStock === 'function'){searchStock('000858')}else{alert('searchStock函数未定义，请刷新页面');}">000858</span>
+                    <span class="stock-tag" onclick="if(typeof searchStock === 'function'){searchStock('600036')}else{alert('searchStock函数未定义，请刷新页面');}">600036</span>
                 </div>
             </header>
 
@@ -727,6 +752,7 @@
                     <div class="financial-metrics-card">
                         <div class="metrics-header">
                             <h3 class="metrics-title">Financial Metrics</h3>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);" id="financialDataInfo">最新季度数据</div>
                         </div>
 
                         <div class="financial-grid">
@@ -764,6 +790,139 @@
                                 <div class="metric-info">
                                     <h4>Free Cash Flow</h4>
                                     <div class="value" id="cashFlow">$0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 扩展财务指标 -->
+                        <div style="margin-top: 2rem; border-top: 1px solid var(--border-light); padding-top: 2rem;">
+                            <h4 style="margin-bottom: 1rem; color: var(--text-primary);">核心财务比率</h4>
+                            <div class="financial-grid">
+                                <div class="financial-item">
+                                    <div class="metric-icon" style="background: #E67E22;">
+                                        <i class="fas fa-percentage"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <h4>ROE</h4>
+                                        <div class="value" id="roe">0%</div>
+                                    </div>
+                                </div>
+                                <div class="financial-item">
+                                    <div class="metric-icon" style="background: #9B59B6;">
+                                        <i class="fas fa-chart-area"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <h4>ROA</h4>
+                                        <div class="value" id="roa">0%</div>
+                                    </div>
+                                </div>
+                                <div class="financial-item">
+                                    <div class="metric-icon" style="background: #16A085;">
+                                        <i class="fas fa-hand-holding-usd"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <h4>每股净资产</h4>
+                                        <div class="value" id="bookValuePerShare">￥0</div>
+                                    </div>
+                                </div>
+                                <div class="financial-item">
+                                    <div class="metric-icon" style="background: #E74C3C;">
+                                        <i class="fas fa-coins"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <h4>每股收益</h4>
+                                        <div class="value" id="earningsPerShare">￥0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 技术分析卡片 -->
+                    <div class="technical-analysis-card" style="background: var(--white); padding: 2rem; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-top: 2rem;">
+                        <div class="metrics-header">
+                            <h3 class="metrics-title">技术分析指标</h3>
+                            <div style="font-size: 0.8rem; color: var(--text-secondary);" id="technicalDataInfo">实时技术分析</div>
+                        </div>
+                        
+                        <div class="financial-grid">
+                            <div class="financial-item">
+                                <div class="metric-icon" style="background: var(--primary-blue);">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <h4>RSI(14)</h4>
+                                    <div class="value" id="rsi14">--</div>
+                                </div>
+                            </div>
+                            <div class="financial-item">
+                                <div class="metric-icon" style="background: var(--success-green);">
+                                    <i class="fas fa-signal"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <h4>MACD</h4>
+                                    <div class="value" id="macdValue">--</div>
+                                </div>
+                            </div>
+                            <div class="financial-item">
+                                <div class="metric-icon" style="background: var(--warning-orange);">
+                                    <i class="fas fa-compress-arrows-alt"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <h4>KDJ-K</h4>
+                                    <div class="value" id="kdjK">--</div>
+                                </div>
+                            </div>
+                            <div class="financial-item">
+                                <div class="metric-icon" style="background: #8E44AD;">
+                                    <i class="fas fa-wave-square"></i>
+                                </div>
+                                <div class="metric-info">
+                                    <h4>布林带位置</h4>
+                                    <div class="value" id="bollingerPosition">--</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 资金流向数据 -->
+                        <div style="margin-top: 2rem; border-top: 1px solid var(--border-light); padding-top: 2rem;">
+                            <h4 style="margin-bottom: 1rem; color: var(--text-primary);">资金流向分析</h4>
+                            <div class="financial-grid">
+                                <div class="financial-item">
+                                    <div class="metric-icon" style="background: var(--success-green);">
+                                        <i class="fas fa-arrow-up"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <h4>主力净流入</h4>
+                                        <div class="value" id="mainInflowAmount">￥0</div>
+                                    </div>
+                                </div>
+                                <div class="financial-item">
+                                    <div class="metric-icon" style="background: var(--primary-blue);">
+                                        <i class="fas fa-percentage"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <h4>净流入占比</h4>
+                                        <div class="value" id="mainInflowPct">0%</div>
+                                    </div>
+                                </div>
+                                <div class="financial-item">
+                                    <div class="metric-icon" style="background: var(--warning-orange);">
+                                        <i class="fas fa-calendar-day"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <h4>净流入天数</h4>
+                                        <div class="value" id="netInflowDays">0天</div>
+                                    </div>
+                                </div>
+                                <div class="financial-item">
+                                    <div class="metric-icon" style="background: var(--danger-red);">
+                                        <i class="fas fa-calendar-minus"></i>
+                                    </div>
+                                    <div class="metric-info">
+                                        <h4>净流出天数</h4>
+                                        <div class="value" id="netOutflowDays">0天</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -810,6 +969,42 @@
                         </div>
                     </div>
 
+                    <!-- 市场情绪指标 -->
+                    <div class="market-sentiment-card" style="background: var(--white); padding: 2rem; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3>📈 市场情绪</h3>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary);" id="sentimentScore">计算中...</span>
+                        </div>
+                        <div id="marketSentimentContent">
+                            <div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                                正在分析市场情绪...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 新闻与研报 -->
+                    <div class="news-research-card" style="background: var(--white); padding: 2rem; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <h3>📰 新闻与研报</h3>
+                            <span style="font-size: 0.8rem; color: var(--text-secondary);" id="newsCount">加载中...</span>
+                        </div>
+                        <div id="newsResearchContent">
+                            <div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                                正在加载新闻和研报...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 历史走势 -->
+                    <div class="historical-trends-card" style="background: var(--white); padding: 2rem; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 2rem;">
+                        <h3 style="margin-bottom: 1rem;">📈 5日历史走势</h3>
+                        <div id="historicalTrendsContent">
+                            <div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                                正在加载历史数据...
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- 最近搜索 -->
                     <div class="recent-searches">
                         <h3 style="margin-bottom: 1rem;">Recent Searches</h3>
@@ -827,13 +1022,38 @@
     </div>
 
     <script>
-        // 只使用本地API，不需要外部API_BASE
+        // 调试模式 - 检测JS错误
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('JavaScript错误:', {message, source, lineno, colno, error});
+            return false;
+        };
         
-        // 搜索股票函数
-        function searchStock(code) {
+        // 立即定义关键函数 - 避免执行顺序问题，挂载到window对象确保全局可用
+        window.searchStock = function(code) {
             document.getElementById('stockInput').value = code;
-            analyzeStock();
+            if (typeof window.analyzeStock === 'function') {
+                window.analyzeStock();
+            } else if (typeof analyzeStock === 'function') {
+                analyzeStock();
+            } else {
+                alert('analyzeStock函数还未加载，请稍后重试');
+            }
+        };
+        
+        // 备用定义
+        function searchStock(code) {
+            window.searchStock(code);
         }
+        
+        // 检查函数定义状态
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('页面加载完成，检查函数定义:', {
+                analyzeStock: typeof analyzeStock,
+                searchStock: typeof searchStock
+            });
+        });
+        
+        // 只使用本地API，不需要外部API_BASE
 
         // 数据格式化函数
         function formatNumber(num, decimals = 2) {
@@ -857,7 +1077,7 @@
             return number.toFixed(2) + '%';
         }
 
-        // 主要分析函数
+        // 主要分析函数 - 使用3003端口真实数据API
         async function analyzeStock() {
             const stockCode = document.getElementById('stockInput').value.trim();
             
@@ -866,29 +1086,58 @@
                 return;
             }
 
+            // 存储股票代码到localStorage，实现全局共享
+            localStorage.setItem('currentStockCode', stockCode);
+            
             // 显示加载状态
             document.getElementById('loadingState').classList.add('show');
             document.getElementById('dashboardContent').style.display = 'none';
 
             try {
-                // 并行获取数据 - 只使用本地API获取完整处理后的数据
-                const [stockData, aiAnalysis] = await Promise.allSettled([
-                    fetch(`http://35.77.54.203:3007/api/stocks/${stockCode}/data`).then(r => r.json()),
-                    fetch(`http://35.77.54.203:3007/api/ai/analyze?stock_code=${stockCode}&analysis_style=professional`, {
+                // 使用3003端口真实数据API - 并行获取所有可用数据源
+                const [basicInfo, technicalData, advancedTechnical, financialData, financialComparison, newsResearch, fundFlow, aiAnalysis] = await Promise.allSettled([
+                    fetch(`http://35.77.54.203:3003/api/stock-info/${stockCode}`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3003/api/technical-indicators/${stockCode}`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3003/api/advanced-technical/${stockCode}`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3003/api/comprehensive-financial/${stockCode}`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3003/api/financial-comparison/${stockCode}`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3003/api/news-research/${stockCode}`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3003/api/fund-flow/${stockCode}`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3003/ai/trading-signal/${stockCode}`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }
-                    }).then(r => r.json())
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ force_refresh: false })
+                    }).then(r => r.json()).catch(e => ({ detail: 'AI服务暂时不可用' }))
                 ]);
 
-                // 渲染数据 - 使用本地API的完整数据
-                const stock = stockData.status === 'fulfilled' ? stockData.value : null;
+                // 获取历史数据和综合市场数据
+                const [historicalData, comprehensiveMarket] = await Promise.allSettled([
+                    fetch(`http://35.77.54.203:3003/api/historical-data/${stockCode}?days=5`).then(r => r.json()),
+                    fetch(`http://35.77.54.203:3003/api/comprehensive-market/${stockCode}`).then(r => r.json())
+                ]);
+
+                // 处理所有API返回数据
+                const basic = basicInfo.status === 'fulfilled' ? basicInfo.value : null;
+                const technical = technicalData.status === 'fulfilled' ? technicalData.value : null;
+                const advancedTech = advancedTechnical.status === 'fulfilled' ? advancedTechnical.value : null;
+                const financial = financialData.status === 'fulfilled' ? financialData.value : null;
+                const financialComp = financialComparison.status === 'fulfilled' ? financialComparison.value : null;
+                const news = newsResearch.status === 'fulfilled' ? newsResearch.value : null;
+                const fundFlowData = fundFlow.status === 'fulfilled' ? fundFlow.value : null;
                 const aiResult = aiAnalysis.status === 'fulfilled' ? aiAnalysis.value : null;
+                const historicalInfo = historicalData.status === 'fulfilled' ? historicalData.value : null;
+                const marketData = comprehensiveMarket.status === 'fulfilled' ? comprehensiveMarket.value : null;
                 
-                // 使用本地API的完整数据
-                renderStockData(stock);
-                renderTechnicalData(stock);
-                renderFinancialData(stock);
-                renderAIAnalysis(aiResult);
+                // 渲染所有数据模块
+                renderRealStockData(basic, technical, advancedTech);
+                renderRealFinancialData(financial, financialComp);
+                renderAdvancedTechnicalData(advancedTech);
+                renderNewsAndResearch(news);
+                renderFundFlowData(fundFlowData);
+                renderRealAIAnalysis(aiResult, advancedTech, financial);
+                renderHistoricalTrends(historicalInfo);
+                renderComprehensiveMarket(marketData);
+                renderMarketSentiment(advancedTech, fundFlowData, news);
 
                 // 隐藏加载状态，显示内容
                 document.getElementById('loadingState').classList.remove('show');
@@ -896,70 +1145,97 @@
 
             } catch (error) {
                 console.error('获取数据失败:', error);
-                alert('获取数据失败，请检查股票代码是否正确');
+                alert('获取数据失败，请检查股票代码是否正确或网络连接');
                 document.getElementById('loadingState').classList.remove('show');
             }
         }
 
-        // 渲染股票基础数据
-        function renderStockData(data) {
-            if (!data) {
+        // 渲染真实股票基础数据 - 使用3003端口API数据
+        function renderRealStockData(basicData, technicalData, advancedTechData) {
+            if (!basicData || basicData.error) {
+                console.warn('基础股票数据不可用:', basicData);
                 return;
             }
 
-            // 使用正确的数据结构 - data来自comprehensive API 或 stocks API
-            const basicInfo = data.basic_info || data.fundamental || {};
-            const financialData = data.financial || {};
+            const stockInfo = basicData.stock_info || {};
+            const technicalInfo = technicalData?.technical_indicators || {};
+            const realtimeInfo = technicalData?.real_time_quotes || {};
             
-            document.getElementById('stockName').textContent = basicInfo.stock_name || data.stock_code || 'N/A';
-            document.getElementById('stockPrice').textContent = '￥' + formatNumber(basicInfo.current_price || 0);
-            document.getElementById('marketCap').textContent = '￥' + formatNumber(basicInfo.market_cap || 0) + '亿';
+            // 使用3003端口的真实数据结构
+            document.getElementById('stockName').textContent = stockInfo['股票简称'] || stockInfo['股票代码'] || '未知股票';
+            document.getElementById('stockPrice').textContent = '￥' + formatNumber(stockInfo['最新'] || realtimeInfo['最新'] || 0);
+            document.getElementById('marketCap').textContent = '￥' + formatNumber((stockInfo['总市值'] || 0) / 100000000, 2) + '亿';
             
-            // 使用真实数据
-            document.getElementById('peRatio').textContent = formatNumber(basicInfo.pe_ratio || 0, 2);
-            document.getElementById('beta').textContent = '1.20'; // 这个数据API中没有，保持默认
-            document.getElementById('dividend').textContent = '0.00%'; // 这个数据API中没有，保持默认
-            document.getElementById('targetPrice').textContent = '￥' + formatNumber((basicInfo.current_price || 0) * 1.1);
+            // 使用真实技术指标数据
+            document.getElementById('peRatio').textContent = formatNumber(technicalInfo['市盈率'] || 0, 2);
+            document.getElementById('beta').textContent = formatNumber(technicalInfo['量比'] || 1.0, 2); 
+            document.getElementById('dividend').textContent = formatPercent(technicalInfo['换手率'] || 0);
+            document.getElementById('targetPrice').textContent = '￥' + formatNumber((stockInfo['最新'] || 0) * 1.1, 2);
             
-            // 更新价格变动 - 使用technical数据
-            const technicalInfo = data.technical || {};
-            const priceChange = technicalInfo.price_change_pct || 0;
+            // 更新价格变动 - 使用技术指标数据
+            const priceChange = technicalInfo['涨跌幅'] || realtimeInfo['涨幅'] || 0;
             const priceChangeElement = document.getElementById('priceChange');
             priceChangeElement.textContent = (priceChange >= 0 ? '+' : '') + formatPercent(priceChange);
             priceChangeElement.className = priceChange >= 0 ? 'change-positive' : 'change-negative';
         }
 
-        // 渲染财务数据
-        function renderFinancialData(data) {
-            if (!data) {
+        // 渲染真实财务数据 - 使用3003端口全面财务数据
+        function renderRealFinancialData(financialData, financialComparisonData) {
+            if (!financialData || financialData.error) {
+                console.warn('财务数据不可用:', financialData);
+                // 显示默认值
+                document.getElementById('revenue').textContent = '￥0';
+                document.getElementById('profitMargin').textContent = '0%';
+                document.getElementById('debtEquity').textContent = '0%';
+                document.getElementById('cashFlow').textContent = '￥0';
                 return;
             }
 
-            // 使用本地API返回的数据结构
-            const financialData = data.financial || {};
-            const revenueData = financialData.revenue_data || {};
-            const profitData = financialData.profit_data || {};
-            const roeData = financialData.roe_data || {};
-            const cashFlowData = financialData.cash_flow_data || {};
-            const debtRatioData = financialData.debt_ratio_data || {};
-            const netMarginData = financialData.net_margin_data || {};
+            const quarterlyData = financialData.quarterly_data || {};
+            const quarters = Object.keys(quarterlyData).sort((a, b) => b.localeCompare(a));
             
-            // 获取最新的财务数据
-            const revenue = revenueData['2025-06-30'] || 0;
-            const profit = profitData['2025-06-30'] || 0;
-            const roe = roeData['2025-06-30'] || 0;
-            const cashFlow = cashFlowData['2025-06-30'] || 0;
-            const debtRatio = debtRatioData['2025-06-30'] || 0;
-            const netMargin = netMarginData['2025-06-30'] || 0;
+            if (quarters.length === 0) {
+                console.warn('无财务季度数据');
+                return;
+            }
+
+            // 获取最新季度的财务指标
+            const latestQuarter = quarterlyData[quarters[0]];
+            const metrics = latestQuarter?.metrics || {};
             
-            // 计算利润率 - 优先使用API提供的净利率，否则计算
-            const profitMargin = netMargin || (revenue > 0 ? (profit / revenue * 100) : 0);
+            // 提取关键财务指标（使用中文字段名，匹配API返回格式）
+            const revenue = metrics['营业总收入'] || 0;
+            const netProfit = metrics['归母净利润'] || 0;
+            const netMargin = metrics['销售净利率'] || metrics['净利率'] || 0;
+            const debtRatio = metrics['资产负债率'] || 0;
+            const cashFlow = metrics['经营现金流量净额'] || 0;
+            const roe = metrics['净资产收益率(ROE)'] || 0;
             
-            // 更新财务指标显示
-            document.getElementById('revenue').textContent = '￥' + formatNumber(revenue);
+            // 计算利润率（如果API没有提供净利率）
+            const profitMargin = netMargin || (revenue > 0 && netProfit > 0 ? (netProfit / revenue * 100) : 0);
+            
+            // 更新财务指标显示 - 显示真实数值
+            document.getElementById('revenue').textContent = '￥' + formatNumber(revenue / 100000000, 2) + '亿';
             document.getElementById('profitMargin').textContent = formatPercent(profitMargin);
             document.getElementById('debtEquity').textContent = formatPercent(debtRatio);
-            document.getElementById('cashFlow').textContent = '￥' + formatNumber(cashFlow);
+            document.getElementById('cashFlow').textContent = '￥' + formatNumber(cashFlow / 100000000, 2) + '亿';
+            
+            // 渲染扩展财务指标
+            const roa = metrics['总资产报酬率(ROA)'] || 0;
+            const bookValue = metrics['每股净资产'] || 0;
+            const eps = metrics['基本每股收益'] || metrics['每股收益'] || 0;
+            
+            document.getElementById('roe').textContent = formatPercent(roe);
+            document.getElementById('roa').textContent = formatPercent(roa);
+            document.getElementById('bookValuePerShare').textContent = '￥' + formatNumber(bookValue, 2);
+            document.getElementById('earningsPerShare').textContent = '￥' + formatNumber(eps, 2);
+            
+            // 更新财务数据信息
+            const latestPeriod = latestQuarter?.period || '';
+            const periodText = latestPeriod ? `${latestPeriod.substring(0,4)}年${latestPeriod.substring(4,6)}月数据` : '最新季度数据';
+            document.getElementById('financialDataInfo').textContent = periodText;
+            
+            console.log('财务数据渲染成功:', { revenue, netProfit, netMargin, debtRatio, cashFlow, roe, roa, bookValue, eps });
         }
 
         // 渲染技术数据
@@ -974,45 +1250,640 @@
             document.getElementById('aiTargetPrice').textContent = '￥' + formatNumber(currentPrice * 1.15);
         }
 
-        // 渲染AI分析数据
-        function renderAIAnalysis(aiResult) {
-            if (!aiResult) {
-                // 如果AI分析失败，使用财务数据生成简单分析
-                generateSimpleAnalysis();
+        // 渲染高级技术分析数据
+        function renderAdvancedTechnicalData(advancedTechData) {
+            if (!advancedTechData || advancedTechData.error) {
+                console.warn('高级技术数据不可用:', advancedTechData);
+                return;
+            }
+            
+            const indicators = advancedTechData.advanced_indicators || {};
+            
+            // 渲染RSI指标
+            const rsi = indicators.rsi_14 || 0;
+            document.getElementById('rsi14').textContent = formatNumber(rsi, 1);
+            
+            // 渲染MACD指标
+            const macd = indicators.macd || {};
+            const macdValue = macd.macd || 0;
+            document.getElementById('macdValue').textContent = formatNumber(macdValue, 4);
+            
+            // 渲染KDJ指标
+            const kdj = indicators.kdj || {};
+            const kdjK = kdj.K || 0;
+            document.getElementById('kdjK').textContent = formatNumber(kdjK, 1);
+            
+            // 渲染布林带位置
+            const bollinger = indicators.bollinger_bands || {};
+            const currentPrice = parseFloat(document.getElementById('stockPrice').textContent.replace('￥', '').replace('万', '').replace('亿', '')) || 0;
+            const bollingerUpper = bollinger.upper || 0;
+            const bollingerLower = bollinger.lower || 0;
+            const bollingerMiddle = bollinger.middle || 0;
+            
+            let bollingerPosition = '--';
+            if (currentPrice > 0 && bollingerUpper > 0 && bollingerLower > 0) {
+                if (currentPrice > bollingerUpper) {
+                    bollingerPosition = '上轨之上';
+                } else if (currentPrice < bollingerLower) {
+                    bollingerPosition = '下轨之下';
+                } else if (currentPrice > bollingerMiddle) {
+                    bollingerPosition = '中上区间';
+                } else {
+                    bollingerPosition = '中下区间';
+                }
+            }
+            document.getElementById('bollingerPosition').textContent = bollingerPosition;
+            
+            // 更新技术数据信息
+            document.getElementById('technicalDataInfo').textContent = '实时技术分析 - ' + new Date().toLocaleTimeString('zh-CN');
+            
+            console.log('高级技术数据渲染成功:', { rsi, macdValue, kdjK, bollingerPosition });
+        }
+        
+        // 渲染资金流向数据
+        function renderFundFlowData(fundFlowData) {
+            if (!fundFlowData || fundFlowData.error) {
+                console.warn('资金流向数据不可用:', fundFlowData);
+                return;
+            }
+            
+            const summary = fundFlowData.summary || {};
+            
+            // 主力资金净流入
+            const mainInflowAmount = summary.total_main_inflow_30d || 0;
+            document.getElementById('mainInflowAmount').textContent = '￥' + formatNumber(mainInflowAmount / 100000000, 2) + '亿';
+            
+            // 净流入占比
+            const mainInflowPct = summary.avg_main_inflow_pct_30d || 0;
+            document.getElementById('mainInflowPct').textContent = formatPercent(mainInflowPct);
+            
+            // 净流入天数
+            const netInflowDays = summary.net_inflow_days || 0;
+            document.getElementById('netInflowDays').textContent = netInflowDays + '天';
+            
+            // 净流出天数  
+            const netOutflowDays = summary.net_outflow_days || 0;
+            document.getElementById('netOutflowDays').textContent = netOutflowDays + '天';
+            
+            console.log('资金流向数据渲染成功:', { mainInflowAmount, mainInflowPct, netInflowDays, netOutflowDays });
+        }
+        
+        // 渲染新闻与研报数据
+        function renderNewsAndResearch(newsData) {
+            const container = document.getElementById('newsResearchContent');
+            const countElement = document.getElementById('newsCount');
+            
+            if (!newsData || newsData.error) {
+                console.warn('新闻研报数据不可用:', newsData);
+                container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">暂无新闻数据</div>';
+                countElement.textContent = '0条新闻';
+                return;
+            }
+            
+            const news = newsData.news || [];
+            const researchReports = newsData.research_reports || [];
+            
+            countElement.textContent = `${news.length}条新闻, ${researchReports.length}份研报`;
+            
+            if (news.length === 0 && researchReports.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">暂无新闻和研报</div>';
+                return;
+            }
+            
+            // 显示最新的几条新闻
+            const newsHtml = news.slice(0, 3).map(item => `
+                <div style="padding: 0.75rem; border-bottom: 1px solid var(--border-light); font-size: 0.85rem;">
+                    <div style="font-weight: 600; margin-bottom: 0.25rem;">${item['新闻标题'] || item.title}</div>
+                    <div style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 0.25rem;">${item['新闻内容'] || item.content || ''}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--primary-blue); font-size: 0.75rem;">${item['文章来源'] || item.source || '未知'}</span>
+                        <span style="color: var(--text-secondary); font-size: 0.75rem;">${item['发布时间'] || item.publish_time || ''}</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            // 显示研报
+            const researchHtml = researchReports.slice(0, 2).map(item => `
+                <div style="padding: 0.75rem; border-bottom: 1px solid var(--border-light); font-size: 0.85rem; background: var(--light-gray);">
+                    <div style="font-weight: 600; margin-bottom: 0.25rem;">${item.title}</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--success-green); font-weight: 600;">${item.rating || '未评级'}</span>
+                        <span style="color: var(--text-secondary); font-size: 0.75rem;">${item.institution || '未知'}</span>
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = newsHtml + researchHtml;
+            
+            console.log('新闻与研报数据渲染成功:', { newsCount: news.length, researchCount: researchReports.length });
+        }
+        
+        // 渲染历史走势数据
+        function renderHistoricalTrends(historicalData) {
+            const container = document.getElementById('historicalTrendsContent');
+            
+            if (!historicalData || historicalData.error) {
+                console.warn('历史数据不可用:', historicalData);
+                container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">暂无历史数据</div>';
+                return;
+            }
+            
+            const historicalArray = historicalData.historical_data || [];
+            
+            if (historicalArray.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: var(--text-secondary); font-size: 0.9rem;">暂无历史走势数据</div>';
+                return;
+            }
+            
+            // 显示最近5日数据
+            const trendsHtml = historicalArray.slice(0, 5).map(day => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; border-bottom: 1px solid var(--border-light); font-size: 0.85rem;">
+                    <span style="font-weight: 600;">${day.date}</span>
+                    <span style="color: var(--text-primary);">￥${formatNumber(day.close)}</span>
+                    <span style="color: ${day.change_pct >= 0 ? 'var(--success-green)' : 'var(--danger-red)'}; font-weight: 600;">
+                        ${day.change_pct >= 0 ? '+' : ''}${formatPercent(day.change_pct)}
+                    </span>
+                    <span style="color: var(--text-secondary); font-size: 0.75rem;">成交量: ${formatNumber(day.volume)}</span>
+                </div>
+            `).join('');
+            
+            container.innerHTML = `
+                <div style="margin-bottom: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                    近${historicalArray.length}个交易日走势
+                </div>
+                ${trendsHtml}
+            `;
+            
+            console.log('历史走势数据渲染成功:', { daysCount: historicalArray.length });
+        }
+        
+        // 渲染综合市场数据
+        function renderComprehensiveMarket(marketData) {
+            if (!marketData || marketData.error) {
+                console.warn('综合市场数据不可用:', marketData);
+                return;
+            }
+            
+            // 这里可以添加更多综合市场数据的渲染逻辑
+            console.log('综合市场数据获取成功:', marketData);
+        }
+        
+        // 渲染增强AI分析数据 - 使用3003端口AI服务，结合技术指标和财务数据
+        function renderRealAIAnalysis(aiResult, advancedTechData, financialData) {
+            if (!aiResult || aiResult.detail) {
+                // 如果AI分析服务不可用，显示状态信息
+                generateAIUnavailableMessage(aiResult?.detail);
                 return;
             }
 
-            // 使用真实的AI分析结果
-            document.getElementById('recommendation').textContent = aiResult.summary || 'HOLD';
-            document.getElementById('riskLevel').textContent = aiResult.risk_assessment || 'Moderate';
-            document.getElementById('analystRating').textContent = aiResult.confidence_score > 0.7 ? 'Strong Buy' : 'Hold';
-            document.getElementById('detailedAnalysis').textContent = aiResult.content || '正在分析中...';
+            // 使用真实的AI分析结果，结合技术指标和财务数据
+            const tradingSignal = aiResult.immediate_trading_signal || {};
+            const technicalSummary = aiResult.technical_summary || {};
+            const aiAnalysisText = aiResult.ai_analysis || '正在分析中...';
+            
+            // 结合技术指标和财务数据生成增强分析
+            const enhancedAnalysis = generateEnhancedAIAnalysis(aiResult, advancedTechData, financialData);
+            
+            document.getElementById('recommendation').textContent = tradingSignal.action || 'HOLD';
+            document.getElementById('riskLevel').textContent = aiResult.risk_warning?.includes('高') ? 'High' : 
+                                                              aiResult.risk_warning?.includes('低') ? 'Low' : 'Moderate';
+            document.getElementById('analystRating').textContent = tradingSignal.confidence === 'high' ? 'Strong Buy' : 
+                                                                  tradingSignal.confidence === 'low' ? 'Weak' : 'Hold';
+            // 处理增强AI分析文本 - 结合多维度数据生成综合分析
+            document.getElementById('detailedAnalysis').innerHTML = formatEnhancedAIAnalysisText(enhancedAnalysis, aiAnalysisText);
             
             // 更新推荐卡片颜色
             const recCard = document.querySelector('.recommendation');
-            const recommendation = aiResult.summary || 'HOLD';
-            recCard.className = 'recommendation';
+            const action = tradingSignal.action || 'HOLD';
             
-            if (recommendation.includes('买入') || recommendation.includes('BUY')) {
+            if (action.includes('买') || action.includes('BUY')) {
                 recCard.style.background = 'var(--success-green)';
-            } else if (recommendation.includes('卖出') || recommendation.includes('SELL')) {
+            } else if (action.includes('卖') || action.includes('SELL')) {
                 recCard.style.background = 'var(--danger-red)';
             } else {
                 recCard.style.background = 'var(--warning-orange)';
             }
         }
 
-        // 生成简单分析（当AI分析不可用时）
-        function generateSimpleAnalysis() {
-            // 使用基础的逻辑分析
+        // 格式化AI分析文本 - 解析JSON并美化显示
+        function formatAIAnalysisText(analysisText) {
+            if (!analysisText) return '正在分析中...';
+            
+            try {
+                // 查找文本中的JSON块
+                const jsonRegex = /\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g;
+                let formattedText = analysisText;
+                
+                // 替换找到的JSON块
+                formattedText = formattedText.replace(jsonRegex, (match) => {
+                    try {
+                        const jsonObj = JSON.parse(match);
+                        return '<div class="json-block"><pre>' + JSON.stringify(jsonObj, null, 2) + '</pre></div>';
+                    } catch (e) {
+                        return match; // 如果不是有效JSON，保持原样
+                    }
+                });
+                
+                // 添加基本的HTML格式化
+                formattedText = formattedText
+                    .replace(/\n\n/g, '</p><p>')
+                    .replace(/\n/g, '<br>')
+                    .replace(/^\s*/, '<p>')
+                    .replace(/\s*$/, '</p>')
+                    .replace(/<p><\/p>/g, '');
+                
+                return formattedText;
+                
+            } catch (error) {
+                console.error('Error formatting AI analysis text:', error);
+                return '<p>' + analysisText.replace(/\n/g, '<br>') + '</p>';
+            }
+        }
+
+        // 生成增强AI分析 - 结合技术指标、财务数据和AI分析
+        function generateEnhancedAIAnalysis(aiResult, advancedTechData, financialData) {
+            const analysis = {
+                technical: {
+                    rsi: advancedTechData?.advanced_indicators?.rsi_14 || 0,
+                    macd: advancedTechData?.advanced_indicators?.macd?.macd || 0,
+                    kdj_k: advancedTechData?.advanced_indicators?.kdj?.K || 0,
+                    support: advancedTechData?.advanced_indicators?.support_resistance?.support || 0,
+                    resistance: advancedTechData?.advanced_indicators?.support_resistance?.resistance || 0
+                },
+                financial: {
+                    roe: financialData?.quarterly_data ? 
+                        Object.values(financialData.quarterly_data)[0]?.metrics?.['净资产收益率(ROE)'] || 0 : 0,
+                    profit_margin: financialData?.quarterly_data ? 
+                        Object.values(financialData.quarterly_data)[0]?.metrics?.['销售净利率'] || 0 : 0,
+                    debt_ratio: financialData?.quarterly_data ? 
+                        Object.values(financialData.quarterly_data)[0]?.metrics?.['资产负债率'] || 0 : 0
+                },
+                ai_insights: aiResult?.ai_analysis || null
+            };
+            
+            return analysis;
+        }
+        
+        // 格式化增强AI分析文本 - 现代化财经风格
+        function formatEnhancedAIAnalysisText(enhancedAnalysis, originalAIText) {
+            const { technical, financial, ai_insights } = enhancedAnalysis;
+            
+            let analysisHtml = '<div class="modern-financial-analysis">';
+            
+            // 技术分析部分
+            analysisHtml += `
+                <div style="margin-bottom: 1.5rem; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+                    <h4 style="margin-bottom: 0.75rem; color: white; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-chart-line"></i> 技术分析评分
+                    </h4>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; font-size: 0.85rem;">
+                        <div>
+                            <span style="opacity: 0.8;">RSI 超买超卖:</span>
+                            <span style="font-weight: 600; margin-left: 0.5rem;">
+                                ${technical.rsi > 70 ? '超买区间' : technical.rsi < 30 ? '超卖区间' : '正常区间'}
+                            </span>
+                        </div>
+                        <div>
+                            <span style="opacity: 0.8;">MACD 走势:</span>
+                            <span style="font-weight: 600; margin-left: 0.5rem;">
+                                ${technical.macd > 0 ? '多头信号' : '空头信号'}
+                            </span>
+                        </div>
+                        <div>
+                            <span style="opacity: 0.8;">KDJ 状态:</span>
+                            <span style="font-weight: 600; margin-left: 0.5rem;">
+                                ${technical.kdj_k > 80 ? '高位麻钒' : technical.kdj_k < 20 ? '低位麻钒' : '震荡区间'}
+                            </span>
+                        </div>
+                        <div>
+                            <span style="opacity: 0.8;">技术位置:</span>
+                            <span style="font-weight: 600; margin-left: 0.5rem;">
+                                支撑￥${formatNumber(technical.support)} | 阻力￥${formatNumber(technical.resistance)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 财务健康度部分
+            analysisHtml += `
+                <div style="margin-bottom: 1.5rem; padding: 1rem; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 12px; color: white;">
+                    <h4 style="margin-bottom: 0.75rem; color: white; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-heartbeat"></i> 财务健康度
+                    </h4>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; font-size: 0.85rem;">
+                        <div>
+                            <span style="opacity: 0.8;">ROE 水平:</span>
+                            <span style="font-weight: 600; margin-left: 0.5rem;">
+                                ${financial.roe > 15 ? '优秀' : financial.roe > 10 ? '良好' : financial.roe > 5 ? '一般' : '较弱'} (${formatPercent(financial.roe)})
+                            </span>
+                        </div>
+                        <div>
+                            <span style="opacity: 0.8;">盈利能力:</span>
+                            <span style="font-weight: 600; margin-left: 0.5rem;">
+                                ${financial.profit_margin > 20 ? '强劲' : financial.profit_margin > 10 ? '稳健' : financial.profit_margin > 5 ? '一般' : '较弱'} (${formatPercent(financial.profit_margin)})
+                            </span>
+                        </div>
+                        <div>
+                            <span style="opacity: 0.8;">负债水平:</span>
+                            <span style="font-weight: 600; margin-left: 0.5rem;">
+                                ${financial.debt_ratio < 30 ? '低风险' : financial.debt_ratio < 60 ? '中等' : '高风险'} (${formatPercent(financial.debt_ratio)})
+                            </span>
+                        </div>
+                        <div>
+                            <span style="opacity: 0.8;">整体评价:</span>
+                            <span style="font-weight: 600; margin-left: 0.5rem;">
+                                ${getOverallRating(financial)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // AI智能分析部分
+            if (ai_insights && ai_insights !== '正在分析中...') {
+                analysisHtml += `
+                    <div style="margin-bottom: 1rem; padding: 1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+                        <h4 style="margin-bottom: 0.75rem; color: white; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="fas fa-robot"></i> AI智能分析
+                        </h4>
+                        <div style="font-size: 0.85rem; line-height: 1.5; opacity: 0.9;">
+                            ${formatAIAnalysisText(ai_insights)}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // 投资建议部分
+            analysisHtml += `
+                <div style="padding: 1rem; background: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%); border-radius: 12px; color: white;">
+                    <h4 style="margin-bottom: 0.75rem; color: white; display: flex; align-items: center; gap: 0.5rem;">
+                        <i class="fas fa-lightbulb"></i> 投资建议
+                    </h4>
+                    <div style="font-size: 0.85rem; line-height: 1.5;">
+                        ${generateInvestmentAdvice(technical, financial)}
+                    </div>
+                </div>
+            `;
+            
+            analysisHtml += '</div>';
+            
+            return analysisHtml;
+        }
+        
+        // 获取整体评价
+        function getOverallRating(financial) {
+            let score = 0;
+            
+            // ROE评分
+            if (financial.roe > 15) score += 3;
+            else if (financial.roe > 10) score += 2;
+            else if (financial.roe > 5) score += 1;
+            
+            // 利润率评分
+            if (financial.profit_margin > 20) score += 3;
+            else if (financial.profit_margin > 10) score += 2;
+            else if (financial.profit_margin > 5) score += 1;
+            
+            // 负债率评分（负债越低越好）
+            if (financial.debt_ratio < 30) score += 3;
+            else if (financial.debt_ratio < 60) score += 2;
+            else score += 1;
+            
+            if (score >= 8) return 'A+ 优秀';
+            if (score >= 6) return 'A 良好';
+            if (score >= 4) return 'B 一般';
+            return 'C 较弱';
+        }
+        
+        // 生成投资建议
+        function generateInvestmentAdvice(technical, financial) {
+            let advice = [];
+            
+            // 技术面建议
+            if (technical.rsi < 30) {
+                advice.push('🟢 技术面处于超卖区间，可能存在反弹机会');
+            } else if (technical.rsi > 70) {
+                advice.push('🔴 技术面处于超买区间，建议谨慎买入');
+            } else {
+                advice.push('🟡 技术面相对均衡，可关注突破信号');
+            }
+            
+            // 财务面建议
+            if (financial.roe > 15 && financial.profit_margin > 15) {
+                advice.push('✨ 财务表现优秀，具备长期投资价值');
+            } else if (financial.roe > 10) {
+                advice.push('💹 财务表现稳健，适合中长期持有');
+            } else {
+                advice.push('⚠️ 财务表现一般，建议重点关注基本面变化');
+            }
+            
+            // 风险提示
+            if (financial.debt_ratio > 70) {
+                advice.push('⚠️ 负债水平较高，注意财务风险');
+            }
+            
+            return advice.join('<br><br>');
+        }
+        
+        // AI分析服务不可用时显示状态信息
+        function generateAIUnavailableMessage(detail) {
             document.getElementById('recommendation').textContent = 'HOLD';
-            document.getElementById('riskLevel').textContent = 'Moderate';
-            document.getElementById('analystRating').textContent = 'Hold';
-            document.getElementById('detailedAnalysis').textContent = '基于当前财务数据的基础分析，建议持有观望。';
+            document.getElementById('riskLevel').textContent = '中等';
+            document.getElementById('analystRating').textContent = '数据分析';
+            document.getElementById('detailedAnalysis').innerHTML = `
+                <div style="padding: 1rem; background: var(--light-gray); border-radius: 8px; text-align: center;">
+                    <p style="margin-bottom: 0.5rem;">🤖 AI分析服务暂时不可用</p>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary);">${detail || '请联系管理员配置API密钥'}</p>
+                    <p style="font-size: 0.8rem; color: var(--primary-blue); margin-top: 0.5rem;">
+                        ℹ️ 系统仍提供技术和财务数据分析
+                    </p>
+                </div>
+            `;
             
             const recCard = document.querySelector('.recommendation');
             recCard.style.background = 'var(--warning-orange)';
         }
+
+        // 渲染市场情绪数据
+        function renderMarketSentiment(advancedTechData, fundFlowData, newsData) {
+            const container = document.getElementById('marketSentimentContent');
+            const scoreElement = document.getElementById('sentimentScore');
+            
+            // 计算市场情绪评分
+            const sentimentScore = calculateMarketSentiment(advancedTechData, fundFlowData, newsData);
+            
+            scoreElement.textContent = `情绪指数: ${sentimentScore.score}/100`;
+            
+            const sentimentHtml = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                    <div style="text-align: center; padding: 0.75rem; background: ${sentimentScore.score > 60 ? 'var(--success-green)' : sentimentScore.score > 40 ? 'var(--warning-orange)' : 'var(--danger-red)'}; color: white; border-radius: 8px;">
+                        <div style="font-size: 1.2rem; font-weight: 700;">${sentimentScore.score}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.9;">综合评分</div>
+                    </div>
+                    <div style="text-align: center; padding: 0.75rem; background: var(--light-gray); border-radius: 8px;">
+                        <div style="font-size: 1rem; font-weight: 600; color: var(--text-primary);">${sentimentScore.level}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">市场情绪</div>
+                    </div>
+                </div>
+                
+                <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                    <div style="margin-bottom: 0.5rem;">• 技术面: ${sentimentScore.technical}</div>
+                    <div style="margin-bottom: 0.5rem;">• 资金面: ${sentimentScore.funding}</div>
+                    <div>• 消息面: ${sentimentScore.news}</div>
+                </div>
+            `;
+            
+            container.innerHTML = sentimentHtml;
+            
+            console.log('市场情绪数据渲染成功:', sentimentScore);
+        }
+        
+        // 计算市场情绪评分
+        function calculateMarketSentiment(advancedTechData, fundFlowData, newsData) {
+            let score = 50; // 基础分收50分
+            let technical = '中性';
+            let funding = '中性';
+            let news = '中性';
+            
+            // 技术面评分（权重40%）
+            if (advancedTechData?.advanced_indicators) {
+                const indicators = advancedTechData.advanced_indicators;
+                let techScore = 0;
+                
+                // RSI评分
+                if (indicators.rsi_14 > 70) {
+                    techScore -= 10; // 超买
+                } else if (indicators.rsi_14 < 30) {
+                    techScore += 10; // 超卖，可能反弹
+                }
+                
+                // MACD评分
+                const macd = indicators.macd?.macd || 0;
+                if (macd > 0) {
+                    techScore += 15; // 多头信号
+                } else {
+                    techScore -= 10; // 空头信号
+                }
+                
+                // KDJ评分
+                const kdjK = indicators.kdj?.K || 50;
+                if (kdjK > 80) {
+                    techScore -= 5; // 超买
+                } else if (kdjK < 20) {
+                    techScore += 5; // 超卖
+                }
+                
+                score += techScore * 0.4;
+                technical = techScore > 10 ? '乐观' : techScore < -10 ? '悲观' : '中性';
+            }
+            
+            // 资金面评分（权重35%）
+            if (fundFlowData?.summary) {
+                const summary = fundFlowData.summary;
+                let fundScore = 0;
+                
+                const mainInflow = summary.total_main_inflow_30d || 0;
+                const netInflowDays = summary.net_inflow_days || 0;
+                const totalDays = (summary.net_inflow_days || 0) + (summary.net_outflow_days || 0);
+                
+                if (mainInflow > 0) {
+                    fundScore += 20; // 主力净流入
+                } else {
+                    fundScore -= 15; // 主力净流出
+                }
+                
+                if (totalDays > 0) {
+                    const inflowRatio = netInflowDays / totalDays;
+                    if (inflowRatio > 0.6) {
+                        fundScore += 10; // 多数时间净流入
+                    } else if (inflowRatio < 0.4) {
+                        fundScore -= 10; // 多数时间净流出
+                    }
+                }
+                
+                score += fundScore * 0.35;
+                funding = fundScore > 10 ? '乐观' : fundScore < -10 ? '悲观' : '中性';
+            }
+            
+            // 消息面评分（权重25%）
+            if (newsData?.news) {
+                const newsCount = newsData.news.length;
+                let newsScore = 0;
+                
+                if (newsCount > 15) {
+                    newsScore += 10; // 关注度高
+                } else if (newsCount < 5) {
+                    newsScore -= 5; // 关注度低
+                }
+                
+                // 简单情绪分析（基于关键词）
+                const newsTexts = newsData.news.map(item => 
+                    (item['新闻标题'] || '') + (item['新闻内容'] || '')
+                ).join(' ');
+                
+                const positiveKeywords = ['上涨', '利好', '增长', '突破', '买入', '看好'];
+                const negativeKeywords = ['下跌', '利空', '下降', '风险', '卖出', '看空'];
+                
+                let positiveCount = 0;
+                let negativeCount = 0;
+                
+                positiveKeywords.forEach(keyword => {
+                    positiveCount += (newsTexts.match(new RegExp(keyword, 'g')) || []).length;
+                });
+                
+                negativeKeywords.forEach(keyword => {
+                    negativeCount += (newsTexts.match(new RegExp(keyword, 'g')) || []).length;
+                });
+                
+                if (positiveCount > negativeCount) {
+                    newsScore += 10;
+                } else if (negativeCount > positiveCount) {
+                    newsScore -= 10;
+                }
+                
+                score += newsScore * 0.25;
+                news = newsScore > 5 ? '乐观' : newsScore < -5 ? '悲观' : '中性';
+            }
+            
+            // 确保评分在合理范围内
+            score = Math.max(0, Math.min(100, Math.round(score)));
+            
+            let level = '中性';
+            if (score >= 70) {
+                level = '乐观';
+            } else if (score >= 55) {
+                level = '偏乐观';
+            } else if (score <= 30) {
+                level = '悲观';
+            } else if (score <= 45) {
+                level = '偏悲观';
+            }
+            
+            return { score, level, technical, funding, news };
+        }
+
+        // 更新数据获取成功后的渲染流程
+        async function updateDataDisplay(stockCode) {
+            console.log(`开始更新${stockCode}的数据显示`);
+        }
+
+        // 全局股票代码共享功能 - 不自动查询
+        function loadGlobalStockCode() {
+            const savedStockCode = localStorage.getItem('currentStockCode');
+            if (savedStockCode) {
+                document.getElementById('stockInput').value = savedStockCode;
+                // 只填充输入框，不自动查询 - 等待用户操作
+            }
+        }
+
+        // 监听其他页面的股票代码变化
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'currentStockCode' && e.newValue) {
+                document.getElementById('stockInput').value = e.newValue;
+                analyzeStock();
+            }
+        });
 
         // 页面加载完成时的初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -1021,6 +1892,18 @@
                 if (e.key === 'Enter') {
                     analyzeStock();
                 }
+            });
+            
+            // 加载全局股票代码
+            loadGlobalStockCode();
+            
+            // 确保所有函数挂载到全局window对象，防止未定义错误
+            window.analyzeStock = analyzeStock;
+            window.searchStock = window.searchStock || searchStock;
+            
+            console.log('全局函数挂载完成:', {
+                'window.analyzeStock': typeof window.analyzeStock,
+                'window.searchStock': typeof window.searchStock
             });
         });
     </script>
