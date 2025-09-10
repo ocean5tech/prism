@@ -418,7 +418,7 @@
             <!-- 页面头部 -->
             <header class="header">
                 <div style="position: absolute; top: 1rem; right: 1rem; font-size: 0.75rem; color: var(--text-secondary);">
-                    版本 v3.0 | 2025-09-09 18:00 UTC | 完整数据可视化版
+                    版本 v3.4 | 2025-09-10 10:52 CST | AI综合分析报告修复版
                 </div>
                 
                 <h1 class="header-title">AI综合分析</h1>
@@ -511,6 +511,136 @@
         function formatPercent(num, decimals = 2) {
             if (num === null || num === undefined || isNaN(num)) return '0.00%';
             return Number(num).toFixed(decimals) + '%';
+        }
+
+        // 生成综合分析文本 - 处理API返回的数据结构
+        function generateComprehensiveAnalysisText(aiResult) {
+            if (!aiResult || aiResult.error) {
+                return '正在加载AI综合分析...';
+            }
+
+            let analysisText = '';
+
+            // 1. 投资评级概述
+            if (aiResult.comprehensive_evaluation) {
+                const eval = aiResult.comprehensive_evaluation;
+                analysisText += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: linear-gradient(135deg, #e8f5e8 0%, #f8f9fa 100%); border-radius: 8px; border-left: 4px solid var(--success-green);">`;
+                analysisText += `<h4 style="margin: 0 0 0.5rem 0; color: var(--success-green); font-weight: 600;">📈 投资评级</h4>`;
+                analysisText += `<div><strong>综合评级：</strong>${eval.investment_rating || '待评估'}</div>`;
+                if (eval.target_price) {
+                    analysisText += `<div><strong>目标价格：</strong>￥${eval.target_price}</div>`;
+                }
+                if (eval.upside_potential) {
+                    analysisText += `<div><strong>上升空间：</strong>${eval.upside_potential}</div>`;
+                }
+                if (eval.time_horizon) {
+                    analysisText += `<div><strong>投资期限：</strong>${eval.time_horizon}</div>`;
+                }
+                if (eval.confidence_level) {
+                    analysisText += `<div><strong>信心等级：</strong>${eval.confidence_level}</div>`;
+                }
+                analysisText += `</div>`;
+            }
+
+            // 2. 核心支撑数据
+            if (aiResult.evidence_and_reasoning?.key_supporting_data) {
+                analysisText += `<div style="margin-bottom: 1.5rem;">`;
+                analysisText += `<h4 style="margin: 0 0 0.75rem 0; color: var(--primary-blue); font-weight: 600;">🔍 核心支撑数据</h4>`;
+                analysisText += `<ul style="margin-left: 1rem; line-height: 1.6;">`;
+                aiResult.evidence_and_reasoning.key_supporting_data.forEach(item => {
+                    analysisText += `<li style="margin-bottom: 0.5rem;">${item}</li>`;
+                });
+                analysisText += `</ul></div>`;
+            }
+
+            // 3. 分析推理链
+            if (aiResult.evidence_and_reasoning?.reasoning_chain) {
+                analysisText += `<div style="margin-bottom: 1.5rem;">`;
+                analysisText += `<h4 style="margin: 0 0 0.75rem 0; color: var(--primary-blue); font-weight: 600;">🧠 分析推理</h4>`;
+                aiResult.evidence_and_reasoning.reasoning_chain.forEach((reason, index) => {
+                    analysisText += `<div style="margin-bottom: 0.75rem; padding: 0.75rem; background: var(--light-gray); border-radius: 6px; border-left: 3px solid var(--primary-blue);">`;
+                    analysisText += `<strong>${index + 1}. </strong>${reason}`;
+                    analysisText += `</div>`;
+                });
+                analysisText += `</div>`;
+            }
+
+            // 4. 详细评估
+            if (aiResult.detailed_analysis) {
+                const detail = aiResult.detailed_analysis;
+                analysisText += `<div style="margin-bottom: 1.5rem;">`;
+                analysisText += `<h4 style="margin: 0 0 0.75rem 0; color: var(--primary-blue); font-weight: 600;">📊 详细评估</h4>`;
+                analysisText += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">`;
+                
+                if (detail.fundamental_strength) {
+                    analysisText += `<div style="padding: 0.75rem; background: var(--light-gray); border-radius: 6px; text-align: center;">`;
+                    analysisText += `<div style="font-weight: 600; color: var(--text-primary);">基本面强度</div>`;
+                    analysisText += `<div style="font-size: 1.1rem; color: var(--success-green); margin-top: 0.25rem;">${detail.fundamental_strength}</div>`;
+                    analysisText += `</div>`;
+                }
+                
+                if (detail.technical_outlook) {
+                    analysisText += `<div style="padding: 0.75rem; background: var(--light-gray); border-radius: 6px; text-align: center;">`;
+                    analysisText += `<div style="font-weight: 600; color: var(--text-primary);">技术面展望</div>`;
+                    analysisText += `<div style="font-size: 1.1rem; color: var(--primary-blue); margin-top: 0.25rem;">${detail.technical_outlook}</div>`;
+                    analysisText += `</div>`;
+                }
+                
+                if (detail.valuation_assessment) {
+                    analysisText += `<div style="padding: 0.75rem; background: var(--light-gray); border-radius: 6px; text-align: center;">`;
+                    analysisText += `<div style="font-weight: 600; color: var(--text-primary);">估值评估</div>`;
+                    analysisText += `<div style="font-size: 1.1rem; color: var(--warning-orange); margin-top: 0.25rem;">${detail.valuation_assessment}</div>`;
+                    analysisText += `</div>`;
+                }
+                
+                analysisText += `</div></div>`;
+            }
+
+            // 5. 风险因素
+            if (aiResult.detailed_analysis?.risk_factors) {
+                analysisText += `<div style="margin-bottom: 1.5rem;">`;
+                analysisText += `<h4 style="margin: 0 0 0.75rem 0; color: var(--danger-red); font-weight: 600;">⚠️ 风险因素</h4>`;
+                analysisText += `<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">`;
+                aiResult.detailed_analysis.risk_factors.forEach(risk => {
+                    analysisText += `<span style="background: var(--danger-red); color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem;">${risk}</span>`;
+                });
+                analysisText += `</div></div>`;
+            }
+
+            // 6. 催化因素
+            if (aiResult.detailed_analysis?.catalysts) {
+                analysisText += `<div style="margin-bottom: 1.5rem;">`;
+                analysisText += `<h4 style="margin: 0 0 0.75rem 0; color: var(--success-green); font-weight: 600;">🚀 催化因素</h4>`;
+                analysisText += `<div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">`;
+                aiResult.detailed_analysis.catalysts.forEach(catalyst => {
+                    analysisText += `<span style="background: var(--success-green); color: white; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.85rem;">${catalyst}</span>`;
+                });
+                analysisText += `</div></div>`;
+            }
+
+            // 7. 行业对比
+            if (aiResult.sector_comparison) {
+                const sector = aiResult.sector_comparison;
+                analysisText += `<div style="margin-bottom: 1.5rem; padding: 1rem; background: linear-gradient(135deg, #f0f8ff 0%, #f8f9fa 100%); border-radius: 8px; border-left: 4px solid var(--primary-blue);">`;
+                analysisText += `<h4 style="margin: 0 0 0.75rem 0; color: var(--primary-blue); font-weight: 600;">🏭 行业对比</h4>`;
+                if (sector.industry_position) {
+                    analysisText += `<div><strong>行业地位：</strong>${sector.industry_position}</div>`;
+                }
+                if (sector.relative_valuation) {
+                    analysisText += `<div><strong>相对估值：</strong>${sector.relative_valuation}</div>`;
+                }
+                if (sector.competitive_advantages) {
+                    analysisText += `<div style="margin-top: 0.5rem;"><strong>竞争优势：</strong></div>`;
+                    analysisText += `<div style="display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.25rem;">`;
+                    sector.competitive_advantages.forEach(advantage => {
+                        analysisText += `<span style="background: var(--primary-blue); color: white; padding: 0.125rem 0.5rem; border-radius: 8px; font-size: 0.8rem;">${advantage}</span>`;
+                    });
+                    analysisText += `</div>`;
+                }
+                analysisText += `</div>`;
+            }
+
+            return analysisText || '基于多维度数据分析，该股票基本面表现稳健。具体分析正在生成中...';
         }
 
         // 主分析函数
@@ -681,7 +811,7 @@
                             AI综合分析报告
                         </h3>
                         <div style="line-height: 1.8; color: var(--text-primary);">
-                            ${aiResult?.content || '基于多维度数据分析，该股票基本面表现稳健...'}
+                            ${generateComprehensiveAnalysisText(aiResult)}
                         </div>
                         
                         <div style="margin-top: 2rem; padding: 1.5rem; background: var(--light-gray); border-radius: 12px;">
